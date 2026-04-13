@@ -1,0 +1,445 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+
+
+\usepackage[spanish]{babel}
+
+
+\title{Canvas de Levantamiento de Requerimientos\\
+App de Seguimiento de Pacientes en Quirófano}
+\author{}
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children no
+\language spanish
+\language_package default
+\inputencoding utf8
+\fontencoding T1
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize a4
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 0
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 0
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style french
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+QUIROINFO:
+ LEVANTAMIENTO DE REQUERIMIENTOS
+\end_layout
+
+\begin_layout Section*
+1.
+ Stakeholder entrevistado
+\end_layout
+
+\begin_layout Standard
+Por lo menos entrevistar a 3 relacionados con el proceso:
+\end_layout
+
+\begin_layout Itemize
+Nombre:
+ 
+\end_layout
+
+\begin_layout Itemize
+Rol (enfermera,
+ médico,
+ administrativo,
+ familiar,
+ IT):
+ 
+\end_layout
+
+\begin_layout Itemize
+Área (quirófano,
+ admisiones,
+ recuperación,
+ etc.):
+ 
+\end_layout
+
+\begin_layout Section*
+2.
+ Flujo actual del paciente
+\end_layout
+
+\begin_layout Standard
+Describe paso a paso cómo ocurre actualmente:
+\end_layout
+
+\begin_layout Verbatim
+
+[Ingreso] -> -> -> -> [Salida]
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Notas clave:
+
+\series default
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Dónde se registra información?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Qué herramientas usan?
+ (papel,
+ sistema,
+ verbal) 
+\end_layout
+
+\begin_layout Section*
+3.
+ Estados del paciente
+\end_layout
+
+\begin_layout Standard
+Lista real (validada con el personal):
+\end_layout
+
+\begin_layout Itemize
+Estado 1:
+ 
+\end_layout
+
+\begin_layout Itemize
+Estado 2:
+ 
+\end_layout
+
+\begin_layout Itemize
+Estado 3:
+ 
+\end_layout
+
+\begin_layout Itemize
+Estado 4:
+ 
+\end_layout
+
+\begin_layout Itemize
+Estado 5:
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Ejemplo típico (validar):
+
+\series default
+ 
+\end_layout
+
+\begin_layout Itemize
+Admisión 
+\end_layout
+
+\begin_layout Itemize
+Preparación 
+\end_layout
+
+\begin_layout Itemize
+En cirugía 
+\end_layout
+
+\begin_layout Itemize
+Recuperación 
+\end_layout
+
+\begin_layout Itemize
+Alta 
+\end_layout
+
+\begin_layout Section*
+4.
+ Problemas actuales
+\end_layout
+
+\begin_layout Itemize
+¿Qué falla hoy?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Dónde hay confusión?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Dónde se pierde información?
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Lista:
+
+\series default
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+5.
+ Comunicación con familiares
+\end_layout
+
+\begin_layout Itemize
+¿Cómo informan hoy?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Cada cuánto preguntan?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Qué preguntan más?
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Ejemplos:
+
+\series default
+ 
+\end_layout
+
+\begin_layout Itemize
+“¿Ya entró a cirugía?” 
+\end_layout
+
+\begin_layout Itemize
+“¿Ya salió?” 
+\end_layout
+
+\begin_layout Itemize
+“¿Está bien?” 
+\end_layout
+
+\begin_layout Section*
+6.
+ Quién actualiza la información
+\end_layout
+
+\begin_layout Itemize
+Rol:
+ 
+\end_layout
+
+\begin_layout Itemize
+Momento en que actualiza:
+ 
+\end_layout
+
+\begin_layout Itemize
+Frecuencia:
+ 
+\end_layout
+
+\begin_layout Section*
+7.
+ Restricciones / privacidad
+\end_layout
+
+\begin_layout Itemize
+¿Qué NO se puede mostrar?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Se usan códigos en vez de nombres?
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Normativas internas?
+ 
+\end_layout
+
+\begin_layout Section*
+8.
+ Volumen y operación
+\end_layout
+
+\begin_layout Itemize
+Número de pacientes simultáneos:
+ 
+\end_layout
+
+\begin_layout Itemize
+Número de cirugías por día:
+ 
+\end_layout
+
+\begin_layout Itemize
+¿Turnos?
+ 
+\end_layout
+
+\begin_layout Section*
+9.
+ Ideas del stakeholder
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
+\begin_layout Section*
+10.
+ Requisitos iniciales (síntesis)
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+MVP:
+
+\series default
+ 
+\end_layout
+
+\begin_layout Itemize
+Mostrar estado del paciente 
+\end_layout
+
+\begin_layout Itemize
+Actualización manual por personal 
+\end_layout
+
+\begin_layout Itemize
+Vista para familiares 
+\end_layout
+
+\begin_layout Itemize
+Identificación (nombre o código) 
+\end_layout
+
+\begin_layout Section*
+11.
+ Observaciones
+\end_layout
+
+\begin_layout Itemize
+Lo que viste vs lo que dijeron:
+ 
+\end_layout
+
+\begin_layout Itemize
+Cuellos de botella:
+ 
+\end_layout
+
+\begin_layout Itemize
+Riesgos:
+ 
+\end_layout
+
+\end_body
+\end_document

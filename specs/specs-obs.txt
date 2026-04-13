@@ -1,0 +1,25 @@
+Algunas observaciones:
+
+General:
+
+- Se requiere mínima interacción del personal administrativo o médico con el sistema.
+
+
+
+Req1:
+
+- El sistema no soportara dispositivos móbiles, cómo télefonos. Será completamente web. 
+
+- Las notificaciones a los familiares se harán mediante mensajes SMS y Whatsapp.
+
+- El tablero no es interactivo solo muestra información (pantalla de TV).
+
+Req3:
+
+- El registro de pacientes debe ser automático ya que los pacientes se van a tomar desde alguna entidad de la Base de Datos (BD). Ya que se requiere mínima interacción del personal administrativo y médico. Algo, como una selección de una lista de pacientes potenciales hacia una lista de pacientes 'activos' o en proceso.
+
+Req4:
+
+- Si en algún momento la actualización de un estado para un paciente falla o hay algún problema de la app o interno del proceso de un paciente, el sistema debe ofrecer la posibilidad de eliminarlo fácilmente de la lista en pantalla para que el familiar pregunte personalmente.
+
+

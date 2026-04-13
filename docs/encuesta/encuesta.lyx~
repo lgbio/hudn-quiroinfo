@@ -1,0 +1,918 @@
+#LyX file created by tex2lyx 2.4
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin /home/lg/APPS/Hospital/quiroinfo/docs/encuesta/
+\textclass article
+\begin_preamble
+
+
+\usepackage[spanish]{babel}
+
+
+\title{Encuesta: Seguimiento de Pacientes en Quirófano}
+
+
+
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children no
+\language spanish
+\language_package default
+\inputencoding utf8
+\fontencoding T1
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize a4
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 0
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 0
+\use_minted 0
+\use_lineno false
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style french
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+
+\lang spanish
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+\backslash
+maketitle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+0. Datos básicos
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Rol: 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset Formula $\square$
+\end_inset
+
+ Enfermería 
+\begin_inset space \quad{}
+
+\end_inset
+
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Médico 
+\begin_inset space \quad{}
+
+\end_inset
+
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Administrativo 
+\begin_inset space \quad{}
+
+\end_inset
+
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Familiar 
+\begin_inset space \quad{}
+
+\end_inset
+
+
+\begin_inset Formula $\square$
+\end_inset
+
+ IT
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Área: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "10cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Años de experiencia: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "5cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+1. Flujo actual
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿En qué etapas participa? (marque todas) 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Admisión 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Preparación 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Cirugía 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Recuperación 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Alta 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Falta alguna etapa? 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "14cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+2. Estados del paciente
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+Seleccione los estados que realmente usan: 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Admisión 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Preparación 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ En cirugía 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ En recuperación 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Alta 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Otro: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "5cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Cuál estado genera más confusión? 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "14cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+3. Actualización de información
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Quién actualiza el estado? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Enfermería 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Médico 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Administrativo 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Nadie formalmente 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Con qué frecuencia se actualiza? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ En tiempo real 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Cada cierto tiempo 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Solo cuando preguntan 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Casi nunca 
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+4. Problemas actuales
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+Califique (1 bajo, 5 crítico):
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Falta de información para familiares: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "2cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Interrupciones constantes: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "2cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Información desactualizada: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "2cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+Dependencia de comunicación verbal: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "2cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+Principal problema: 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "14cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+5. Comunicación con familiares
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Cómo informan hoy? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Verbal 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Teléfono 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Pantalla 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ No hay canal claro 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Cada cuánto preguntan? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Muy frecuente 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Frecuente 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Ocasional 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Raro 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+Top 2 preguntas: 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+1. 
+\begin_inset CommandInset line
+LatexCommand rule
+width "10cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+2. 
+\begin_inset CommandInset line
+LatexCommand rule
+width "10cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+6. Necesidad de sistema
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Qué tan útil sería una pantalla en tiempo real? (1–5) 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "3cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Qué debería mostrar? (máx 3) 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Estado del paciente 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Tiempo estimado 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Sala/quirófano 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Observaciones básicas 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Otro: 
+\begin_inset CommandInset line
+LatexCommand rule
+width "5cm"
+height "0.4pt"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+7. Privacidad
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Qué se puede mostrar? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Nombre completo 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Iniciales 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ Código 
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Qué NO debe mostrarse? 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "14cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+8. Operación
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+¿Cuántos pacientes simultáneos? 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ < 5 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ 5–10 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ 10–20 
+\end_layout
+
+\begin_layout Itemize
+
+\lang spanish
+
+\begin_inset Formula $\square$
+\end_inset
+
+ > 20 
+\end_layout
+
+\begin_layout Section*
+
+\lang spanish
+9. Idea abierta
+\end_layout
+
+\begin_layout Standard
+
+\lang spanish
+Si pudiera mejorar UNA cosa del proceso: 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset CommandInset line
+LatexCommand rule
+width "14cm"
+height "0.4pt"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
