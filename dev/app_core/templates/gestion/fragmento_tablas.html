@@ -1,0 +1,190 @@
+{% load filtros_gestion %}
+{% comment %}
+Fragmento HTMX con ambas tablas del panel de gestión.
+Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
+{% endcomment %}
+<div id="fragmento-tablas" class="grid grid-cols-2 gap-6">
+
+	{% comment %}Columna izquierda: Tabla_Programados{% endcomment %}
+	<div class="bg-white rounded-2xl shadow p-4 flex flex-col gap-4">
+		<h2 class="text-lg font-semibold text-gray-700">Pacientes programados</h2>
+
+		<table class="w-full text-sm">
+			<thead>
+				<tr class="text-left text-gray-500 border-b">
+					<th class="pb-2 pr-4">Identificación</th>
+					<th class="pb-2 pr-4">Nombre</th>
+					<th class="pb-2">Estado</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for paciente in pacientes %}
+				{% with sesActiva=sesionPorPaciente|get_item:paciente.pk %}
+				<tr class="border-b last:border-0"
+					x-data="{
+						estadoActual: '{% if sesActiva %}{{ sesActiva.estado }}{% endif %}',
+						mostrarOtro: {% if sesActiva and sesActiva.estado == 'OTRO' %}true{% else %}false{% endif %}
+					}"
+				>
+					<td class="py-3 pr-4 font-mono font-semibold">{{ paciente.identificacion }}</td>
+					<td class="py-3 pr-4 text-gray-600">{{ paciente.nombre|default:"—" }}</td>
+					<td class="py-3">
+						<div class="flex flex-wrap gap-1 items-center">
+							{% for valor, etiqueta in estados.choices %}
+							{% if valor == 'OTRO' %}
+							{% comment %}OTRO: solo revela el campo de texto; el POST lo dispara el botón Confirmar{% endcomment %}
+							<button
+								type="button"
+								x-on:click="estadoActual = 'OTRO'; mostrarOtro = true"
+								:class="estadoActual === 'OTRO'
+									? 'bg-purple-500 text-white ring-2 ring-offset-1 ring-purple-700'
+									: 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+								class="px-2 py-1 rounded-full text-xs font-medium transition-all"
+							>
+								{{ etiqueta }}
+							</button>
+							{% else %}
+							<button
+								type="button"
+								x-on:click="estadoActual = '{{ valor }}'; mostrarOtro = false"
+								:class="estadoActual === '{{ valor }}'
+									? {
+										'EN_PREPARACION':  'bg-yellow-400 text-gray-900 ring-2 ring-offset-1 ring-yellow-600',
+										'EN_CIRUGIA':      'bg-orange-500 text-white ring-2 ring-offset-1 ring-orange-700',
+										'EN_RECUPERACION': 'bg-blue-500 text-white ring-2 ring-offset-1 ring-blue-700',
+										'FINALIZADO':      'bg-gray-400 text-gray-900 ring-2 ring-offset-1 ring-gray-600',
+									}['{{ valor }}']
+									: 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+								class="px-2 py-1 rounded-full text-xs font-medium transition-all"
+								hx-post="{% url 'aplicar-estado' %}"
+								hx-target="#fragmento-tablas"
+								hx-swap="outerHTML"
+								hx-vals='{"pacienteId": "{{ paciente.pk }}", "estado": "{{ valor }}"}'
+							>
+								{{ etiqueta }}
+							</button>
+							{% endif %}
+							{% endfor %}
+						</div>
+
+						{% comment %}Campo descripcionOtro — visible solo cuando OTRO está seleccionado; POST se envía al confirmar{% endcomment %}
+						<div x-show="mostrarOtro" x-cloak class="mt-2 flex gap-2 items-center">
+							<input
+								type="text"
+								x-ref="desc{{ paciente.pk }}"
+								maxlength="50"
+								placeholder="Descripción (máx. 50 caracteres)"
+								class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+							>
+							<button
+								type="button"
+								hx-post="{% url 'aplicar-estado' %}"
+								hx-target="#fragmento-tablas"
+								hx-swap="outerHTML"
+								:hx-vals='JSON.stringify({ pacienteId: "{{ paciente.pk }}", estado: "OTRO", descripcionOtro: $refs["desc{{ paciente.pk }}"].value })'
+								class="bg-purple-500 hover:bg-purple-600 text-white text-xs px-2 py-1 rounded transition-colors whitespace-nowrap"
+							>
+								Confirmar
+							</button>
+						</div>
+					</td>
+				</tr>
+				{% endwith %}
+			{% empty %}
+				<tr>
+					<td colspan="3" class="py-4 text-center text-gray-400">Sin pacientes registrados.</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+
+		{% comment %}Botón Adicionar paciente{% endcomment %}
+		<div x-data="{ abierto: false }" class="mt-auto pt-2 border-t">
+			<button
+				type="button"
+				x-on:click="abierto = !abierto"
+				class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+			>
+				+ Adicionar paciente
+			</button>
+
+			<form
+				x-show="abierto"
+				x-cloak
+				hx-post="{% url 'agregar-paciente' %}"
+				hx-target="#fragmento-tablas"
+				hx-swap="outerHTML"
+				class="mt-2 flex gap-2 items-end flex-wrap"
+			>
+				{% csrf_token %}
+				<div class="flex flex-col gap-1">
+					<label class="text-xs text-gray-500">Identificación *</label>
+					<input
+						type="text"
+						name="identificacion"
+						required
+						maxlength="50"
+						class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+					>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label class="text-xs text-gray-500">Nombre</label>
+					<input
+						type="text"
+						name="nombre"
+						maxlength="255"
+						class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+					>
+				</div>
+				<button
+					type="submit"
+					class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded transition-colors"
+				>
+					Agregar
+				</button>
+			</form>
+		</div>
+	</div>
+
+	{% comment %}Columna derecha: Tabla_En_Sala{% endcomment %}
+	<div class="bg-white rounded-2xl shadow p-4 flex flex-col gap-4">
+		<h2 class="text-lg font-semibold text-gray-700">Pacientes en sala</h2>
+
+		<table class="w-full text-sm">
+			<thead>
+				<tr class="text-left text-gray-500 border-b">
+					<th class="pb-2 pr-4">Identificación</th>
+					<th class="pb-2 pr-4">Estado</th>
+					<th class="pb-2">Hora ingreso</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for sesion in sesionesActivas %}
+				<tr class="border-b last:border-0">
+					<td class="py-3 pr-4 font-mono font-semibold">{{ sesion.paciente.identificacion }}</td>
+					<td class="py-3 pr-4">
+						<span class="inline-block px-2 py-1 rounded-full text-xs font-semibold
+							{% if sesion.estado == 'EN_PREPARACION' %}bg-yellow-400 text-gray-900
+							{% elif sesion.estado == 'EN_CIRUGIA' %}bg-orange-500 text-white
+							{% elif sesion.estado == 'EN_RECUPERACION' %}bg-blue-500 text-white
+							{% elif sesion.estado == 'FINALIZADO' %}bg-gray-400 text-gray-900
+							{% elif sesion.estado == 'OTRO' %}bg-purple-500 text-white
+							{% endif %}">
+							{{ sesion.get_estado_display }}
+						</span>
+						{% if sesion.estado == 'OTRO' and sesion.descripcionOtro %}
+						<span class="ml-1 text-xs text-gray-500 italic">{{ sesion.descripcionOtro }}</span>
+						{% endif %}
+					</td>
+					<td class="py-3 text-gray-500">{{ sesion.ingresadoEn|date:"d/m/Y H:i" }}</td>
+				</tr>
+			{% empty %}
+				<tr>
+					<td colspan="3" class="py-4 text-center text-gray-400">Sin pacientes en sala.</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</div>
+
+</div>

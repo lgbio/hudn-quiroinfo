@@ -47,6 +47,26 @@ Los nombres del framework (Django, Python, librerías) deben permanecer en ingl�
 - Dejar un espacio entre el nombre de función o variable y los paréntesis/corchetes.
   - Ejemplo: `FuncionEjemplo ()`, `variableEjemplo []`
 
+## Indentación
+
+- Usar **tabs** para indentar (1 tab = 4 espacios). No usar espacios para indentar.
+- Aplica a funciones, clases, bloques de control, y cualquier bloque de código.
+
+## Documentación de clases y funciones
+
+- Toda clase debe incluir un docstring corto que describa su propósito.
+- Toda función o método debe incluir un docstring corto que describa qué hace.
+- El docstring debe ir inmediatamente después de la declaración, entre comillas triples `"""`.
+- Ejemplo:
+  ```python
+  class SesionServicio:
+      """Gestiona la creación y actualización de sesiones quirúrgicas."""
+
+      def aplicarEstado (self, paciente, nuevoEstado):
+          """Crea o actualiza la sesión del paciente con el nuevo estado."""
+          ...
+  ```
+
 ## Diseño de funciones
 
 - Funciones cortas: máximo ~30 líneas.

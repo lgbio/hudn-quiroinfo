@@ -1,0 +1,13 @@
+from django.urls import path
+from django.views.generic import RedirectView
+
+from .vistas import AgregarPacienteVista, AplicarEstadoVista, GestionVista, TableroFragmentoVista, TableroVista
+
+urlpatterns = [
+	path ('', RedirectView.as_view (url='/tablero/', permanent=False), name='inicio'),
+	path ('tablero/', TableroVista.as_view (), name='tablero'),
+	path ('tablero/fragmento/', TableroFragmentoVista.as_view (), name='tablero-fragmento'),
+	path ('gestion/', GestionVista.as_view (), name='gestion'),
+	path ('gestion/pacientes/agregar/', AgregarPacienteVista.as_view (), name='agregar-paciente'),
+	path ('gestion/sesiones/estado/', AplicarEstadoVista.as_view (), name='aplicar-estado'),
+]
