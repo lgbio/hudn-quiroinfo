@@ -14,7 +14,8 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 				<tr class="text-left text-gray-500 border-b">
 					<th class="pb-2 pr-4">Identificación</th>
 					<th class="pb-2 pr-4">Nombre</th>
-					<th class="pb-2">Estado</th>
+					<th class="pb-2 pr-4">Estado</th>
+					<th class="pb-2">Acciones</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -23,30 +24,55 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 				<tr class="border-b last:border-0"
 					x-data="{
 						estadoActual: '{% if sesActiva %}{{ sesActiva.estado }}{% endif %}',
-						mostrarOtro: {% if sesActiva and sesActiva.estado == 'OTRO' %}true{% else %}false{% endif %}
+						modalAbierto: false,
+						editId: '{{ paciente.identificacion }}',
+						editNombre: '{{ paciente.nombre|default:"" }}',
+						editEstado: '',
+						errorEdicion: '',
+						guardar () {
+							if (!this.editId.trim () || !this.editEstado.trim ()) {
+								this.errorEdicion = 'Identificación y Estado son obligatorios.';
+								return;
+							}
+							const disparar = this.estadoActual !== 'OTRO';
+							htmx.ajax ('POST', '{% url "actualizar-paciente" %}', {
+								values: {
+									pacienteId:          '{{ paciente.pk }}',
+									nuevaIdentificacion: this.editId,
+									labelOtro:           this.editEstado,
+									estadoOtro:          disparar ? 'OTRO' : ''
+								},
+								target: '#fragmento-tablas',
+								swap:   'outerHTML'
+							});
+							this.modalAbierto = false;
+							this.errorEdicion = '';
+						}
 					}"
 				>
 					<td class="py-3 pr-4 font-mono font-semibold">{{ paciente.identificacion }}</td>
 					<td class="py-3 pr-4 text-gray-600">{{ paciente.nombre|default:"—" }}</td>
-					<td class="py-3">
+					<td class="py-3 pr-4">
 						<div class="flex flex-wrap gap-1 items-center">
 							{% for valor, etiqueta in estados.choices %}
 							{% if valor == 'OTRO' %}
-							{% comment %}OTRO: solo revela el campo de texto; el POST lo dispara el botón Confirmar{% endcomment %}
+							{% comment %}OTRO: dispara POST directo igual que los demás botones; label desde DB{% endcomment %}
 							<button
 								type="button"
-								x-on:click="estadoActual = 'OTRO'; mostrarOtro = true"
+								x-on:click="estadoActual = 'OTRO'"
 								:class="estadoActual === 'OTRO'
 									? 'bg-purple-500 text-white ring-2 ring-offset-1 ring-purple-700'
 									: 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
 								class="px-2 py-1 rounded-full text-xs font-medium transition-all"
-							>
-								{{ etiqueta }}
-							</button>
+								hx-post="{% url 'aplicar-estado' %}"
+								hx-target="#fragmento-tablas"
+								hx-swap="outerHTML"
+								hx-vals='{"pacienteId": "{{ paciente.pk }}", "estado": "OTRO"}'
+							>{{ sesActiva.labelOtro|default:"Otro" }}</button>
 							{% else %}
 							<button
 								type="button"
-								x-on:click="estadoActual = '{{ valor }}'; mostrarOtro = false"
+								x-on:click="estadoActual = '{{ valor }}'"
 								:class="estadoActual === '{{ valor }}'
 									? {
 										'EN_PREPARACION':  'bg-yellow-400 text-gray-900 ring-2 ring-offset-1 ring-yellow-600',
@@ -66,33 +92,80 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 							{% endif %}
 							{% endfor %}
 						</div>
+					</td>
+					<td class="py-3">
+						<button
+							type="button"
+							x-on:click="modalAbierto = true; editEstado = estadoActual === 'OTRO' ? '{{ sesActiva.labelOtro|default:"Otro" }}' : estadoActual"
+							class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+						>
+							Editar
+						</button>
 
-						{% comment %}Campo descripcionOtro — visible solo cuando OTRO está seleccionado; POST se envía al confirmar{% endcomment %}
-						<div x-show="mostrarOtro" x-cloak class="mt-2 flex gap-2 items-center">
-							<input
-								type="text"
-								x-ref="desc{{ paciente.pk }}"
-								maxlength="50"
-								placeholder="Descripción (máx. 50 caracteres)"
-								class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
-							>
-							<button
-								type="button"
-								hx-post="{% url 'aplicar-estado' %}"
-								hx-target="#fragmento-tablas"
-								hx-swap="outerHTML"
-								:hx-vals='JSON.stringify({ pacienteId: "{{ paciente.pk }}", estado: "OTRO", descripcionOtro: $refs["desc{{ paciente.pk }}"].value })'
-								class="bg-purple-500 hover:bg-purple-600 text-white text-xs px-2 py-1 rounded transition-colors whitespace-nowrap"
-							>
-								Confirmar
-							</button>
+						{% comment %}Modal_Edicion{% endcomment %}
+						<div
+							x-show="modalAbierto"
+							x-cloak
+							class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+						>
+							<div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm flex flex-col gap-4">
+								<h3 class="text-base font-semibold text-gray-700">Editar paciente</h3>
+
+								<div class="flex flex-col gap-1">
+									<label class="text-xs text-gray-500">Identificación *</label>
+									<input
+										type="text"
+										x-model="editId"
+										maxlength="50"
+										class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+									>
+								</div>
+
+								<div class="flex flex-col gap-1">
+									<label class="text-xs text-gray-500">Nombre</label>
+									<p x-text="editNombre || '—'" class="text-sm text-gray-600 px-2 py-1"></p>
+								</div>
+
+								<div class="flex flex-col gap-1">
+									<label class="text-xs text-gray-500">Estado *</label>
+									<input
+										type="text"
+										x-model="editEstado"
+										maxlength="50"
+										class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+									>
+								</div>
+
+								<p
+									x-show="errorEdicion"
+									x-text="errorEdicion"
+									class="text-xs text-red-600"
+								></p>
+
+								<div class="flex gap-2 justify-end">
+									<button
+										type="button"
+										x-on:click="modalAbierto = false; errorEdicion = ''"
+										class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded border border-gray-300"
+									>
+										Cancelar
+									</button>
+									<button
+										type="button"
+										x-on:click="guardar ()"
+										class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition-colors"
+									>
+										Guardar
+									</button>
+								</div>
+							</div>
 						</div>
 					</td>
 				</tr>
 				{% endwith %}
 			{% empty %}
 				<tr>
-					<td colspan="3" class="py-4 text-center text-gray-400">Sin pacientes registrados.</td>
+					<td colspan="4" class="py-4 text-center text-gray-400">Sin pacientes registrados.</td>
 				</tr>
 			{% endfor %}
 			</tbody>
@@ -147,21 +220,21 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 	</div>
 
 	{% comment %}Columna derecha: Tabla_En_Sala{% endcomment %}
-	<div class="bg-white rounded-2xl shadow p-4 flex flex-col gap-4">
-		<h2 class="text-lg font-semibold text-gray-700">Pacientes en sala</h2>
+	<div class="bg-gray-900 rounded-2xl shadow p-4 flex flex-col gap-4 text-white">
+		<h2 class="text-lg font-semibold text-gray-100">Pacientes en sala</h2>
 
 		<table class="w-full text-sm">
 			<thead>
-				<tr class="text-left text-gray-500 border-b">
+				<tr class="text-left text-gray-400 border-b border-gray-700">
 					<th class="pb-2 pr-4">Identificación</th>
 					<th class="pb-2 pr-4">Estado</th>
-					<th class="pb-2">Hora ingreso</th>
+					<th class="pb-2">Última actualización</th>
 				</tr>
 			</thead>
 			<tbody>
 			{% for sesion in sesionesActivas %}
-				<tr class="border-b last:border-0">
-					<td class="py-3 pr-4 font-mono font-semibold">{{ sesion.paciente.identificacion }}</td>
+				<tr class="border-b border-gray-700 last:border-0">
+					<td class="py-3 pr-4 font-mono font-semibold text-white">{{ sesion.paciente.identificacion }}</td>
 					<td class="py-3 pr-4">
 						<span class="inline-block px-2 py-1 rounded-full text-xs font-semibold
 							{% if sesion.estado == 'EN_PREPARACION' %}bg-yellow-400 text-gray-900
@@ -170,17 +243,14 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 							{% elif sesion.estado == 'FINALIZADO' %}bg-gray-400 text-gray-900
 							{% elif sesion.estado == 'OTRO' %}bg-purple-500 text-white
 							{% endif %}">
-							{{ sesion.get_estado_display }}
+							{% if sesion.estado == 'OTRO' %}{{ sesion.labelOtro }}{% else %}{{ sesion.get_estado_display }}{% endif %}
 						</span>
-						{% if sesion.estado == 'OTRO' and sesion.descripcionOtro %}
-						<span class="ml-1 text-xs text-gray-500 italic">{{ sesion.descripcionOtro }}</span>
-						{% endif %}
 					</td>
-					<td class="py-3 text-gray-500">{{ sesion.ingresadoEn|date:"d/m/Y H:i" }}</td>
+					<td class="py-3 text-gray-400">{{ sesion.actualizadoEn|date:"d/m/Y H:i" }}</td>
 				</tr>
 			{% empty %}
 				<tr>
-					<td colspan="3" class="py-4 text-center text-gray-400">Sin pacientes en sala.</td>
+					<td colspan="3" class="py-4 text-center text-gray-500">Sin pacientes en sala.</td>
 				</tr>
 			{% endfor %}
 			</tbody>

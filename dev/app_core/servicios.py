@@ -1,7 +1,5 @@
 import logging
 
-from django.core.exceptions import ValidationError
-
 from .models import EstadoQuirurgico, Paciente, RegistroEstado, Sesion
 
 logger = logging.getLogger (__name__)
@@ -19,22 +17,19 @@ coloresEstado = {
 class SesionServicio:
 	"""Gestiona la creación y actualización de sesiones quirúrgicas."""
 
-	def aplicarEstado (self, paciente: Paciente, nuevoEstado: str, descripcionOtro: str = None) -> Sesion:
-		print (f"+++ {paciente=} {nuevoEstado=} {descripcionOtro=}")
-
+	def aplicarEstado (self, paciente: Paciente, nuevoEstado: str, labelOtro: str = 'Otro') -> Sesion:
 		"""Crea la sesión si no existe, o actualiza el estado si ya existe."""
-		descripcionOtro = self._validarDescripcion (nuevoEstado, descripcionOtro)
-
 		sesion, creada = Sesion.objects.get_or_create (
 			paciente=paciente,
 			oculto=False,
-			defaults={'estado': nuevoEstado, 'descripcionOtro': descripcionOtro},
+			defaults={'estado': nuevoEstado, 'labelOtro': labelOtro},
 		)
 		estadoAnterior = None if creada else sesion.estado
 
 		if not creada:
-			sesion.estado          = nuevoEstado
-			sesion.descripcionOtro = descripcionOtro
+			sesion.estado = nuevoEstado
+			if nuevoEstado == EstadoQuirurgico.OTRO:
+				sesion.labelOtro = labelOtro
 
 		if nuevoEstado == EstadoQuirurgico.FINALIZADO:
 			sesion.oculto = True
@@ -50,21 +45,13 @@ class SesionServicio:
 		logger.info (f"Estado aplicado: {paciente.identificacion} → {nuevoEstado}")
 		return sesion
 
-	def _validarDescripcion (self, nuevoEstado: str, descripcionOtro: str) -> str | None:
-		"""Valida y normaliza descripcionOtro según el estado recibido."""
-		if nuevoEstado == EstadoQuirurgico.OTRO:
-			if not descripcionOtro or not descripcionOtro.strip ():
-				raise ValidationError ("Descripción requerida para estado OTRO")
-			return descripcionOtro [:50].strip ()
-		return None
-
 
 def obtenerSesionesVisibles ():
-	"""Retorna sesiones activas no ocultas, ordenadas por ingresadoEn descendente."""
+	"""Retorna sesiones activas no ocultas, ordenadas por actualizadoEn descendente."""
 	return (
 		Sesion.objects
 		.filter (oculto=False)
 		.select_related ('paciente')
-		.only ('id', 'paciente__identificacion', 'estado', 'descripcionOtro', 'ingresadoEn', 'actualizadoEn')
-		.order_by ('-ingresadoEn')
+		.only ('id', 'paciente__identificacion', 'estado', 'labelOtro', 'ingresadoEn', 'actualizadoEn')
+		.order_by ('-actualizadoEn')
 	)

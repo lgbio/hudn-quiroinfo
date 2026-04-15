@@ -8,7 +8,7 @@ from django.views import View
 from app_autenticacion.mixins import LoginRequeridoMixin
 from app_notificaciones.servicios import NotificacionServicio
 
-from .models import EstadoQuirurgico, Paciente
+from .models import EstadoQuirurgico, Paciente, Sesion
 from .servicios import SesionServicio, coloresEstado, obtenerSesionesVisibles
 
 logger = logging.getLogger (__name__)
@@ -28,9 +28,8 @@ class AplicarEstadoVista (LoginRequeridoMixin, View):
 
 	def post (self, request):
 		"""Recibe pacienteId y estado; actualiza la sesión y retorna fragmento HTMX."""
-		pacienteId      = request.POST.get ('pacienteId')
-		estado          = request.POST.get ('estado')
-		descripcionOtro = request.POST.get ('descripcionOtro', None) or None
+		pacienteId = request.POST.get ('pacienteId')
+		estado     = request.POST.get ('estado')
 
 		if not pacienteId or not estado:
 			return HttpResponse ('Datos incompletos.', status=400)
@@ -39,7 +38,7 @@ class AplicarEstadoVista (LoginRequeridoMixin, View):
 
 		try:
 			servicio = SesionServicio ()
-			sesion   = servicio.aplicarEstado (paciente, estado, descripcionOtro)
+			sesion   = servicio.aplicarEstado (paciente, estado)
 			NotificacionServicio ().notificarCambioEstado (paciente.identificacion, estado)
 		except ValidationError as e:
 			return HttpResponse (str (e), status=400)
@@ -53,6 +52,37 @@ class AplicarEstadoVista (LoginRequeridoMixin, View):
 	def _renderizarFragmento (self, request):
 		"""Construye el contexto y renderiza el fragmento de tablas."""
 		return render (request, 'gestion/fragmento_tablas.html', _contextoGestion ())
+
+
+class ActualizarPacienteVista (LoginRequeridoMixin, View):
+	"""Actualiza la identificación de un paciente y retorna el fragmento de tablas."""
+
+	def post (self, request):
+		"""Recibe pacienteId, nuevaIdentificacion y labelOtro; persiste y retorna fragmento HTMX."""
+		pacienteId         = request.POST.get ('pacienteId')
+		nuevaIdentificacion = request.POST.get ('nuevaIdentificacion', '').strip ()
+		labelOtro          = request.POST.get ('labelOtro', 'Otro').strip () or 'Otro'
+		estadoOtro         = request.POST.get ('estadoOtro', '').strip ()
+
+		if not pacienteId or not nuevaIdentificacion:
+			return HttpResponse ('Datos incompletos.', status=400)
+
+		paciente = get_object_or_404 (Paciente, pk=pacienteId)
+		paciente.identificacion = nuevaIdentificacion
+		paciente.save ()
+
+		if estadoOtro:
+			try:
+				SesionServicio ().aplicarEstado (paciente, 'OTRO', labelOtro=labelOtro)
+				NotificacionServicio ().notificarCambioEstado (paciente.identificacion, 'OTRO')
+			except Exception as e:
+				logger.error (f"Error al aplicar estado OTRO desde modal: {e}")
+		else:
+			# Actualizar solo el labelOtro si ya existe sesión activa con estado OTRO
+			Sesion.objects.filter (paciente=paciente, oculto=False, estado=EstadoQuirurgico.OTRO).update (labelOtro=labelOtro)
+
+		contexto = _contextoGestion ()
+		return render (request, 'gestion/fragmento_tablas.html', contexto)
 
 
 class AgregarPacienteVista (LoginRequeridoMixin, View):

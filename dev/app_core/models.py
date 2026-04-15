@@ -36,10 +36,11 @@ class Sesion (models.Model):
 	id              = models.UUIDField (primary_key=True, default=uuid.uuid4, editable=False)
 	paciente        = models.ForeignKey (Paciente, on_delete=models.PROTECT)
 	estado          = models.CharField (max_length=20, choices=EstadoQuirurgico.choices)
-	descripcionOtro = models.CharField (max_length=50, null=True, blank=True)
+	labelOtro       = models.CharField (max_length=50, default='Otro')
 	ingresadoEn     = models.DateTimeField (auto_now_add=True)
 	actualizadoEn   = models.DateTimeField (auto_now=True)
 	oculto          = models.BooleanField (default=False)
+
 
 	class Meta:
 		db_table = 'sesiones'

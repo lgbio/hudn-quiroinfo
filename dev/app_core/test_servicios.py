@@ -1,7 +1,8 @@
 import pytest
 import factory
-
-from django.core.exceptions import ValidationError
+from datetime import timezone
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from .models import EstadoQuirurgico, Paciente, Sesion, RegistroEstado
 from .servicios import SesionServicio, obtenerSesionesVisibles
@@ -76,36 +77,13 @@ class TestAplicarEstado:
 		assert sesion.oculto is True
 		assert Sesion.objects.filter (paciente=paciente).exists ()
 
-	def test_otro_guarda_descripcion_truncada_a_50_chars (self):
-		"""aplicarEstado() con OTRO guarda descripcionOtro truncado a 50 caracteres."""
-		paciente     = PacienteFactory ()
-		descripcion  = "A" * 80
-
-		sesion = self.servicio.aplicarEstado (paciente, EstadoQuirurgico.OTRO, descripcion)
-
-		assert sesion.descripcionOtro == "A" * 50
-
-	def test_otro_sin_descripcion_lanza_validation_error (self):
-		"""aplicarEstado() con OTRO y sin descripción lanza ValidationError."""
+	def test_otro_sin_descripcion_no_lanza_error (self):
+		"""aplicarEstado() con OTRO y sin descripción retorna sesión sin error."""
 		paciente = PacienteFactory ()
 
-		with pytest.raises (ValidationError):
-			self.servicio.aplicarEstado (paciente, EstadoQuirurgico.OTRO)
+		sesion = self.servicio.aplicarEstado (paciente, EstadoQuirurgico.OTRO)
 
-	def test_otro_con_descripcion_vacia_lanza_validation_error (self):
-		"""aplicarEstado() con OTRO y descripción vacía lanza ValidationError."""
-		paciente = PacienteFactory ()
-
-		with pytest.raises (ValidationError):
-			self.servicio.aplicarEstado (paciente, EstadoQuirurgico.OTRO, "   ")
-
-	def test_estado_distinto_a_otro_fuerza_descripcion_none (self):
-		"""aplicarEstado() con estado distinto a OTRO establece descripcionOtro=None."""
-		paciente = PacienteFactory ()
-
-		sesion = self.servicio.aplicarEstado (paciente, EstadoQuirurgico.EN_PREPARACION, "ignorar esto")
-
-		assert sesion.descripcionOtro is None
+		assert sesion.estado == EstadoQuirurgico.OTRO
 
 	def test_crea_registro_estado_al_aplicar (self):
 		"""aplicarEstado() crea un RegistroEstado por cada llamada."""
@@ -135,8 +113,8 @@ class TestObtenerSesionesVisibles:
 		assert len (resultado) == 1
 		assert resultado [0].oculto is False
 
-	def test_retorna_sesiones_ordenadas_por_ingresado_en_descendente (self):
-		"""obtenerSesionesVisibles() retorna sesiones ordenadas por ingresadoEn descendente."""
+	def test_retorna_sesiones_ordenadas_por_actualizado_en_descendente (self):
+		"""obtenerSesionesVisibles() retorna sesiones ordenadas por actualizadoEn descendente."""
 		sesion1 = SesionFactory ()
 		sesion2 = SesionFactory ()
 		sesion3 = SesionFactory ()
@@ -145,3 +123,48 @@ class TestObtenerSesionesVisibles:
 		ids       = [s.id for s in resultado]
 
 		assert ids == [sesion3.id, sesion2.id, sesion1.id]
+
+	# **Validates: Requirements 3.1**
+	@given (st.lists (st.booleans (), min_size=1))
+	@settings (max_examples=100)
+	@pytest.mark.django_db
+	def test_solo_retorna_sesiones_visibles (self, listaOculto):
+		"""Propiedad 1: obtenerSesionesVisibles() retorna exactamente las sesiones con oculto=False."""
+		sesionesCreadas = []
+		for valorOculto in listaOculto:
+			sesion = SesionFactory (oculto=valorOculto)
+			sesionesCreadas.append (sesion)
+
+		idsVisiblesEsperados = {s.id for s in sesionesCreadas if not s.oculto}
+		resultado            = list (obtenerSesionesVisibles ())
+		idsResultado         = {s.id for s in resultado}
+
+		assert idsResultado == idsVisiblesEsperados
+
+		for sesion in sesionesCreadas:
+			sesion.delete ()
+		for sesion in sesionesCreadas:
+			sesion.paciente.delete ()
+
+	# **Validates: Requirements 3.2, 4.1**
+	@given (st.lists (st.datetimes (timezones=st.just (timezone.utc)), min_size=2))
+	@settings (max_examples=100)
+	@pytest.mark.django_db
+	def test_sesiones_ordenadas_por_actualizado_en_descendente (self, fechas):
+		"""Propiedad 2: obtenerSesionesVisibles() retorna sesiones ordenadas por actualizadoEn descendente."""
+		sesionesCreadas = []
+		for fecha in fechas:
+			sesion = SesionFactory (oculto=False)
+			Sesion.objects.filter (id=sesion.id).update (actualizadoEn=fecha)
+			sesion.refresh_from_db ()
+			sesionesCreadas.append (sesion)
+
+		resultado = list (obtenerSesionesVisibles ())
+
+		for i in range (len (resultado) - 1):
+			assert resultado [i].actualizadoEn >= resultado [i + 1].actualizadoEn
+
+		for sesion in sesionesCreadas:
+			sesion.delete ()
+		for sesion in sesionesCreadas:
+			sesion.paciente.delete ()
