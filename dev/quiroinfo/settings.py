@@ -15,7 +15,7 @@ EMAIL_WHITELIST = ["lgarreta@yahoo.com", "lgarreta@gmail.com"]
 EMAIL_DOMINIO_PERMITIDO = 'hodenar.gov.co'
 #--------------------------------------------------------------------
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
 	'django.contrib.admin',

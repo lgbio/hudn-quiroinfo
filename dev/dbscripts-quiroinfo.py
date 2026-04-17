@@ -114,9 +114,6 @@ def populateDBWithTestData ():
 		print (traceback.format_exc())
 
 
-
-
-
 #----------------------------------------------------------
 # Remove old migrations and make new migrations
 #----------------------------------------------------------

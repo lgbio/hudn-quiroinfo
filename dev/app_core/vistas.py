@@ -9,7 +9,9 @@ from app_autenticacion.mixins import LoginRequeridoMixin
 from app_notificaciones.servicios import NotificacionServicio
 
 from .models import EstadoQuirurgico, Paciente, Sesion
+from .utils import Utils
 from .servicios import SesionServicio, coloresEstado, obtenerSesionesVisibles
+
 
 logger = logging.getLogger (__name__)
 
@@ -138,3 +140,6 @@ def _contextoGestion ():
 		'estados':           EstadoQuirurgico,
 		'sesionPorPaciente': sesionPorPaciente,
 	}
+
+
+
