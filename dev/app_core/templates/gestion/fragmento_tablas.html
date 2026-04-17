@@ -24,24 +24,44 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 				<tr class="border-b last:border-0"
 					x-data="{
 						estadoActual: '{% if sesActiva %}{{ sesActiva.estado }}{% endif %}',
+						labelOtroActual: '{{ sesActiva.labelOtro|default:"Otro" }}',
 						modalAbierto: false,
 						editId: '{{ paciente.identificacion }}',
 						editNombre: '{{ paciente.nombre|default:"" }}',
+						editTelefono: '{{ paciente.telefono|default:"" }}',
 						editEstado: '',
+						editEstadoOriginal: '',
 						errorEdicion: '',
+						abrirModal () {
+							this.editEstado = this.estadoActual === 'OTRO'
+								? this.labelOtroActual
+								: this.estadoActual;
+							this.editEstadoOriginal = this.editEstado;
+							this.editTelefono = '{{ paciente.telefono|default:"" }}';
+							this.errorEdicion = '';
+							this.modalAbierto = true;
+						},
 						guardar () {
-							if (!this.editId.trim () || !this.editEstado.trim ()) {
-								this.errorEdicion = 'Identificación y Estado son obligatorios.';
+							if (!this.editId.trim ()) {
+								this.errorEdicion = 'La Identificación es obligatoria.';
 								return;
 							}
-							const disparar = this.estadoActual !== 'OTRO';
+							if (this.editTelefono.trim () && !/^\d{10}$/.test (this.editTelefono.trim ())) {
+								this.errorEdicion = 'El teléfono debe tener exactamente 10 dígitos numéricos.';
+								return;
+							}
+							const estadoCambio = this.editEstado.trim () !== this.editEstadoOriginal.trim ();
+							const values = {
+								pacienteId:          '{{ paciente.pk }}',
+								nuevaIdentificacion: this.editId,
+								telefono:            this.editTelefono.trim (),
+							};
+							if (estadoCambio && this.editEstado.trim ()) {
+								values.labelOtro  = this.editEstado.trim ();
+								values.estadoOtro = 'OTRO';
+							}
 							htmx.ajax ('POST', '{% url "actualizar-paciente" %}', {
-								values: {
-									pacienteId:          '{{ paciente.pk }}',
-									nuevaIdentificacion: this.editId,
-									labelOtro:           this.editEstado,
-									estadoOtro:          disparar ? 'OTRO' : ''
-								},
+								values: values,
 								target: '#fragmento-tablas',
 								swap:   'outerHTML'
 							});
@@ -96,7 +116,7 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 					<td class="py-3">
 						<button
 							type="button"
-							x-on:click="modalAbierto = true; editEstado = estadoActual === 'OTRO' ? '{{ sesActiva.labelOtro|default:"Otro" }}' : estadoActual"
+							x-on:click="abrirModal ()"
 							class="text-xs text-blue-600 hover:text-blue-800 font-medium"
 						>
 							Editar
@@ -124,6 +144,17 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 								<div class="flex flex-col gap-1">
 									<label class="text-xs text-gray-500">Nombre</label>
 									<p x-text="editNombre || '—'" class="text-sm text-gray-600 px-2 py-1"></p>
+								</div>
+
+								<div class="flex flex-col gap-1">
+									<label class="text-xs text-gray-500">Teléfono para notificaciones</label>
+									<input
+										type="text"
+										x-model="editTelefono"
+										maxlength="10"
+										placeholder="Ingrese un número de teléfono para notificar al familiar del paciente"
+										class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+									>
 								</div>
 
 								<div class="flex flex-col gap-1">
@@ -216,6 +247,31 @@ Contexto esperado: pacientes, sesionesActivas, estados, sesionPorPaciente
 					Agregar
 				</button>
 			</form>
+		</div>
+
+		{% comment %}Botón Cargar pacientes programados{% endcomment %}
+		<div
+			x-data="{ cargando: false }"
+			class="pt-2 border-t"
+		>
+			<button
+				type="button"
+				x-on:click="
+					if (confirm ('Va a limpiar la tabla, ¿Está seguro?')) {
+						cargando = true;
+						htmx.ajax ('POST', '{% url "cargar-programados" %}', {
+							target: '#fragmento-tablas',
+							swap: 'outerHTML'
+						}).then (() => { cargando = false; });
+					}
+				"
+				:disabled="cargando"
+				:class="cargando ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
+				class="text-sm bg-green-600 text-white px-3 py-1 rounded transition-colors flex items-center gap-2"
+			>
+				<span x-show="cargando" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+				<span x-text="cargando ? 'Cargando...' : 'Cargar pacientes programados'"></span>
+			</button>
 		</div>
 	</div>
 

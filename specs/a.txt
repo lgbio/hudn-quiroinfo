@@ -1,0 +1,22 @@
+Requisito X: Registro de Teléfono para Notificar a Familiar de Paciente
+
+User Story:
+Como Funcionario, quiero registrar un teléfono para notificar asociado al paciente, para poder usarlo en futuras comunicaciones.
+
+Criterios de Aceptación
+THE Sistema SHALL agregar un campo llamado "Teléfono para notificaciones" en el Dialogo_EditarPaciente.
+THE Campo SHALL ser opcional.
+THE Campo SHALL aceptar únicamente números de teléfono móviles colombianos en formato local, sin prefijo de país.
+THE Formato válido SHALL ser:
+Solo dígitos
+Longitud de 10 caracteres
+Ejemplo válido: 3176753151
+IF el valor contiene caracteres no numéricos,
+THEN THE Sistema SHALL rechazar el valor.
+IF el valor no tiene exactamente 10 dígitos,
+THEN THE Sistema SHALL rechazar el valor.
+IF el valor es válido,
+THEN THE Sistema SHALL permitir guardar el paciente.
+THE Campo SHALL mostrar un texto de ayuda:
+"Ingrese un número de teléfono para notificar al familiar del paciente"
+THE Sistema SHALL permitir editar o eliminar el número en cualquier momento.

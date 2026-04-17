@@ -2,25 +2,25 @@
 
 ## Introducción
 
-Mejoras al MVP existente de Quiroinfo, un sistema de seguimiento de estado quirúrgico para familiares. Las mejoras abordan cuatro áreas: simplificación del botón "OTRO" (eliminando el flujo de descripción adicional y reemplazándolo por un label dinámico), edición de datos de pacientes desde el panel de gestión, actualización del tablero público con ordenamiento por `updated_at` y polling automático, y homogeneización visual de la tabla de pacientes en sala con el estilo del tablero.
+Mejoras al MVP existente de Quiroinfo, un sistema de seguimiento de estado quirúrgico para familiares. Las mejoras abordan las siguientes áreas: simplificación del botón "OTRO" con label persistido en BD, edición de datos de pacientes desde el panel de gestión, actualización del tablero público como pantalla TV responsiva, homogeneización visual de la tabla de pacientes en sala, orden consistente entre tablas, eliminación del modelo RegistroEstado, carga manual de pacientes programados, limpieza de integridad referencial, y registro de teléfono para notificaciones al familiar del paciente.
 
 La arquitectura permanece igual: Django SSR con HTMX para interacciones dinámicas, Alpine.js para comportamientos ligeros de UI, y Tailwind CSS por CDN.
 
 ## Glosario
 
 - **Sistema**: La aplicación web Quiroinfo de seguimiento de estado quirúrgico.
-- **Tablero**: Pantalla pública proyectada en sala de espera. Solo lectura, sin autenticación.
+- **Tablero**: Pantalla pública proyectada en sala de espera. Solo lectura, sin autenticación. Optimizada para TV.
 - **Funcionario**: Usuario autenticado con acceso al Panel_Gestion.
 - **Panel_Gestion**: Vista privada del Funcionario con las dos tablas paralelas de operación.
 - **Tabla_Programados**: Tabla izquierda del Panel_Gestion con la lista de pacientes y sus botones de estado.
 - **Tabla_Pacientes_En_Sala**: Tabla derecha del Panel_Gestion con los pacientes actualmente visibles en el Tablero.
 - **Botón_OTRO**: Botón de estado en la Tabla_Programados que representa el estado `OTRO` con un label configurable.
 - **Modal_Edicion**: Modal que aparece al hacer clic en "Editar" en una fila de la Tabla_Programados.
-- **Campo_Estado**: Campo de texto editable dentro del Modal_Edicion que representa el estado del paciente.
-- **Label_OTRO**: Texto visible en el Botón_OTRO, inicialmente "Otro", actualizable desde el Modal_Edicion.
+- **Campo_Estado**: Campo de texto editable dentro del Modal_Edicion que representa el label personalizado del estado OTRO.
+- **Label_OTRO**: Texto visible en el Botón_OTRO, inicialmente "Otro", persistido en la BD en el campo `labelOtro` de `Sesion`.
+- **Teléfono_Notificacion**: Número de teléfono móvil colombiano (10 dígitos, sin prefijo de país) asociado a un `Paciente`, usado para futuras comunicaciones con el familiar.
 - **Sesion**: Registro activo de un paciente en el tablero con su estado actual.
-- **descripcionOtro**: Campo del modelo Sesion que actualmente almacena la descripción del estado OTRO. Será eliminado en estas mejoras.
-- **updated_at**: Campo `actualizadoEn` del modelo Sesion, usado para ordenar el Tablero.
+- **actualizadoEn**: Campo `actualizadoEn` del modelo Sesion (`auto_now=True`), usado para ordenar ambas tablas y el Tablero.
 
 ---
 
@@ -35,9 +35,10 @@ La arquitectura permanece igual: Django SSR con HTMX para interacciones dinámic
 1. THE Sistema SHALL eliminar el campo `descripcionOtro` del modelo `Sesion` y toda referencia a él en la interfaz y en la lógica de negocio.
 2. THE Botón_OTRO SHALL comportarse igual que los demás botones de estado: al hacer clic, SHALL enviar directamente el POST de cambio de estado sin abrir formularios ni flujos adicionales.
 3. THE Sistema SHALL permitir que el Label_OTRO sea dinámico y configurable por el Funcionario desde el Modal_Edicion.
-4. WHEN el Funcionario guarda el Modal_Edicion con un valor en el Campo_Estado, THEN THE Sistema SHALL actualizar el Label_OTRO del paciente correspondiente con ese valor.
+4. WHEN el Funcionario guarda el Modal_Edicion con un valor modificado en el Campo_Estado, THEN THE Sistema SHALL persistir el Label_OTRO en la base de datos en el campo `labelOtro` de `Sesion`.
 5. THE Sistema SHALL inicializar el Label_OTRO con el texto "Otro" por defecto para todos los pacientes.
 6. THE Sistema SHALL no solicitar ningún campo adicional al Funcionario al hacer clic en el Botón_OTRO.
+7. THE Label_OTRO SHALL ser leído desde la base de datos en cada render, garantizando consistencia entre Tabla_Programados, Tabla_Pacientes_En_Sala y Tablero.
 
 ---
 
@@ -51,33 +52,33 @@ La arquitectura permanece igual: Django SSR con HTMX para interacciones dinámic
 2. WHEN el Funcionario hace clic en "Editar", THEN THE Sistema SHALL mostrar el Modal_Edicion con los siguientes campos:
    - Identificación (editable, texto libre)
    - Nombre (solo lectura)
-   - Estado (editable, texto libre)
-3. THE Campo_Estado SHALL inicializarse con el Label_OTRO actualmente asignado al paciente si el estado activo es `OTRO`, o con el label del botón de estado actualmente seleccionado en cualquier otro caso.
-4. WHEN el Funcionario presiona "Guardar", THEN THE Sistema SHALL validar que los campos Identificación y Estado no estén vacíos.
-5. IF alguno de los campos requeridos está vacío, THEN THE Sistema SHALL mostrar un mensaje de error en el Modal_Edicion sin cerrarlo.
-6. IF los datos son válidos, THEN THE Sistema SHALL actualizar la Identificación y el Label_OTRO del paciente únicamente en las tablas de la interfaz, sin persistir cambios en la base de datos.
-7. THE Sistema SHALL actualizar la fila correspondiente del paciente en la Tabla_Programados con la nueva identificación.
-8. THE Sistema SHALL actualizar la fila correspondiente del paciente en la Tabla_Pacientes_En_Sala con la nueva identificación, si el paciente tiene una sesión activa.
-9. IF el valor del Campo_Estado fue modificado, THEN THE Sistema SHALL asignar ese valor como Label_OTRO del paciente y ejecutar la lógica equivalente a hacer clic en el Botón_OTRO para ese paciente.
-10. THE Sistema SHALL no actualizar directamente el Tablero desde esta acción; el Tablero se actualizará mediante su ciclo de polling habitual.
-11. THE Modal_Edicion SHALL cerrarse automáticamente después de que el Funcionario presione "Guardar" con datos válidos.
-12. THE actualización de filas SHALL realizarse sin recarga completa de la página.
+   - Estado (editable, texto libre, pre-cargado con el label actual)
+3. THE Campo_Estado SHALL inicializarse con el Label_OTRO actualmente asignado al paciente si el estado activo es `OTRO`, o con el valor del estado activo en cualquier otro caso.
+4. WHEN el Funcionario presiona "Guardar", THE Sistema SHALL validar que el campo Identificación no esté vacío.
+5. IF la Identificación está vacía, THEN THE Sistema SHALL mostrar un mensaje de error en el Modal_Edicion sin cerrarlo.
+6. IF los datos son válidos, THEN THE Sistema SHALL persistir la nueva Identificación en la base de datos (`Paciente.identificacion`).
+7. IF el Campo_Estado fue modificado respecto al valor original, THEN THE Sistema SHALL persistir el nuevo Label_OTRO en `Sesion.labelOtro` y aplicar el estado `OTRO` al paciente.
+8. IF el Campo_Estado NO fue modificado, THEN THE Sistema SHALL no alterar el estado ni el Label_OTRO del paciente.
+9. THE Modal_Edicion SHALL cerrarse automáticamente después de que el Funcionario presione "Guardar" con datos válidos.
+10. THE actualización SHALL realizarse sin recarga completa de la página, mediante HTMX.
 
 ---
 
 ### Requisito 3: Actualización del Tablero de Estado Quirúrgico
 
-**User Story:** Como familiar, quiero ver el estado actualizado de los pacientes en una pantalla, para conocer el progreso sin interrumpir al personal.
+**User Story:** Como familiar, quiero ver el estado actualizado de los pacientes en una pantalla TV, para conocer el progreso sin interrumpir al personal.
 
 #### Criterios de Aceptación
 
 1. THE Tablero SHALL mostrar todos los pacientes con sesión activa (`oculto=False`).
 2. THE Sistema SHALL ordenar los pacientes en el Tablero por `actualizadoEn` en orden descendente (más reciente primero).
-3. THE Tablero SHALL mostrar por cada paciente: Identificación, Estado y fecha/hora de última actualización (`actualizadoEn`).
-4. THE Tablero SHALL renderizar cada paciente como una fila de tabla con las columnas: Identificación, Estado (con badge de color) y Hora de última actualización — coherente con el layout de la Tabla_Pacientes_En_Sala.
-5. THE Tablero SHALL reemplazar el layout de tarjetas actual por un layout de tabla de filas para mantener coherencia visual con el Panel_Gestion.
-5. WHEN el estado de un paciente cambia, THEN THE Tablero SHALL actualizarse automáticamente mediante polling HTMX sin requerir recarga manual de la página.
-6. THE Tablero SHALL realizar polling al endpoint `/tablero/fragmento/` con un intervalo máximo de 30 segundos.
+3. THE Tablero SHALL mostrar por cada paciente: Identificación, Estado (con Label_OTRO si aplica) y hora de última actualización.
+4. THE Tablero SHALL usar un layout de filas flex que ocupe el 100% del viewport sin scroll.
+5. THE Tablero SHALL distribuir las filas de pacientes equitativamente en la altura disponible (1 paciente = 100%, 9 pacientes = ~11% cada uno).
+6. THE Tablero SHALL escalar el tamaño de fuente proporcionalmente a la altura de cada fila usando unidades `vh` con `clamp()`.
+7. WHEN el estado de un paciente cambia, THEN THE Tablero SHALL actualizarse automáticamente mediante polling HTMX cada 15 segundos.
+8. THE Tablero SHALL mostrar la hora en formato de 12 horas (ej. "08:50 am"), sin fecha.
+9. THE Tablero SHALL ser legible en pantallas de al menos 40 pulgadas a una distancia de 3 metros.
 
 ---
 
@@ -88,11 +89,64 @@ La arquitectura permanece igual: Django SSR con HTMX para interacciones dinámic
 #### Criterios de Aceptación
 
 1. THE Tabla_Pacientes_En_Sala SHALL ordenar los pacientes por `actualizadoEn` en orden descendente, igual que el Tablero.
-2. THE Sistema SHALL aplicar a la Tabla_Pacientes_En_Sala el mismo esquema visual del Tablero: fondo oscuro (`bg-gray-900` o equivalente), texto claro, badges de estado con los mismos colores.
-3. THE Estilo SHALL incluir: tema oscuro (dark), colores de estado consistentes con el Tablero, tipografía de tamaño legible, y jerarquía visual equivalente a las tarjetas del Tablero.
-4. THE Tabla_Pacientes_En_Sala SHALL adaptarse al espacio disponible en el Panel_Gestion manteniendo legibilidad.
+2. THE Sistema SHALL aplicar a la Tabla_Pacientes_En_Sala el mismo esquema visual del Tablero: fondo oscuro (`bg-gray-900`), texto claro, badges de estado con los mismos colores.
+3. THE Tabla_Pacientes_En_Sala SHALL mostrar las columnas: Identificación, Estado y Hora de última actualización (`actualizadoEn`).
+4. THE Estado SHALL mostrar el Label_OTRO cuando el estado sea `OTRO`.
 5. THE Sistema SHALL no modificar la funcionalidad de la Tabla_Pacientes_En_Sala, únicamente su presentación visual.
-6. THE Tabla_Pacientes_En_Sala SHALL mostrar las columnas: Identificación, Estado y Hora de última actualización (`actualizadoEn`).
+
+---
+
+### Requisito 5: Orden Consistente entre Tablas
+
+**User Story:** Como Funcionario, quiero que la Tabla_Programados tenga el mismo orden que la Tabla_Pacientes_En_Sala, para mantener consistencia visual y operativa.
+
+#### Criterios de Aceptación
+
+1. THE Tabla_Programados SHALL usar el mismo criterio de ordenamiento que Tabla_Pacientes_En_Sala: `actualizadoEn` descendente.
+2. THE Sistema SHALL aplicar el ordenamiento en backend (queryset) para ambas tablas.
+3. Los pacientes sin sesión activa SHALL aparecer al final de la Tabla_Programados, ordenados por `identificacion`.
+4. THE orden SHALL ser determinístico y consistente en cada render.
+
+---
+
+### Requisito 6: Eliminación de RegistroEstado
+
+**User Story:** Como desarrollador, quiero eliminar el modelo RegistroEstado para simplificar el sistema en el MVP.
+
+#### Criterios de Aceptación
+
+1. THE Sistema SHALL eliminar el modelo `RegistroEstado` del código y su tabla de la base de datos mediante migración.
+2. THE Sistema SHALL remover toda lógica que dependa de `RegistroEstado`.
+3. THE Sistema SHALL mantener el estado actual de `Sesion` como única fuente de verdad.
+
+---
+
+### Requisito 7: Carga Manual de Pacientes Programados
+
+**User Story:** Como Funcionario, quiero cargar manualmente los pacientes programados mediante un botón, para actualizar la información cuando sea necesario.
+
+#### Criterios de Aceptación
+
+1. THE Panel_Gestion SHALL mostrar un botón "Cargar pacientes programados" debajo de la Tabla_Programados.
+2. WHEN el Funcionario presiona el botón, THE Sistema SHALL mostrar un mensaje de confirmación: "Va a limpiar la tabla, ¿Está seguro?".
+3. IF el Funcionario confirma, THE Sistema SHALL ejecutar `Utils.cargarPacientesProgramadosCirugia()` via POST a `/gestion/programados/cargar/`.
+4. THE función SHALL eliminar todos los registros de `Paciente` (y sus `Sesion` asociadas por CASCADE) y cargar los nuevos registros.
+5. THE Sistema SHALL mostrar feedback visual de carga (spinner) mientras se ejecuta la operación.
+6. THE Sistema SHALL prevenir ejecuciones concurrentes de la carga.
+7. AFTER la ejecución, THE Sistema SHALL refrescar la Tabla_Programados usando HTMX (partial update).
+8. THE endpoint SHALL estar protegido (login requerido).
+
+---
+
+### Requisito 8: Integridad Referencial al Eliminar Pacientes
+
+**User Story:** Como Sistema, quiero que al eliminar un Paciente también se eliminen automáticamente sus Sesiones asociadas, para permitir la limpieza completa del tablero sin errores de integridad.
+
+#### Criterios de Aceptación
+
+1. THE relación `Sesion.paciente` SHALL usar `on_delete=CASCADE`.
+2. WHEN un `Paciente` es eliminado, THE Sistema SHALL eliminar automáticamente todas sus `Sesion` asociadas.
+3. THE `Utils.cargarPacientesProgramadosCirugia()` SHALL usar el ORM de Django para la limpieza, garantizando que el CASCADE se aplique correctamente.
 
 ---
 
@@ -100,7 +154,46 @@ La arquitectura permanece igual: Django SSR con HTMX para interacciones dinámic
 
 - Arquitectura SSR con Django Templates; sin SPA ni API REST obligatoria.
 - Interacciones dinámicas mediante HTMX; comportamientos ligeros de UI con Alpine.js.
-- El campo `descripcionOtro` del modelo `Sesion` debe eliminarse con su migración correspondiente.
-- El Label_OTRO es estado de UI (frontend); no requiere persistencia en base de datos.
-- El ordenamiento del Tablero cambia de `ingresadoEn` a `actualizadoEn` para reflejar la actividad más reciente.
-- El campo `actualizadoEn` ya existe en el modelo `Sesion` (`auto_now=True`).
+- El campo `labelOtro` del modelo `Sesion` persiste el label del botón OTRO en la BD (CharField, default='Otro').
+- El ordenamiento de ambas tablas y el Tablero usa `-actualizadoEn`.
+- El Tablero usa layout flex con `height: 100vh` y filas con `flex: 1` para distribución dinámica.
+- Fuentes del Tablero escalan con `clamp(min, Xvh, max)` para adaptarse a cualquier tamaño de pantalla.
+
+---
+
+### Requisito 9: Registro de Teléfono para Notificar a Familiar de Paciente
+
+**User Story:** Como Funcionario, quiero registrar un teléfono para notificar asociado al paciente, para poder usarlo en futuras comunicaciones.
+
+#### Criterios de Aceptación
+
+1. THE Modal_Edicion SHALL agregar un campo "Teléfono para notificaciones" al formulario de edición del paciente.
+2. THE Campo SHALL ser opcional — el Funcionario puede guardar sin completarlo.
+3. THE Campo SHALL mostrar el texto de ayuda: "Ingrese un número de teléfono para notificar al familiar del paciente".
+4. THE Campo SHALL aceptar únicamente números de teléfono móviles colombianos en formato local, sin prefijo de país:
+   - Solo dígitos
+   - Longitud exacta de 10 caracteres
+   - Ejemplo válido: `3176753151`
+5. IF el valor contiene caracteres no numéricos, THEN THE Sistema SHALL rechazar el valor y mostrar un mensaje de error en el modal sin cerrarlo.
+6. IF el valor no tiene exactamente 10 dígitos, THEN THE Sistema SHALL rechazar el valor y mostrar un mensaje de error en el modal sin cerrarlo.
+7. IF el valor es válido o está vacío, THEN THE Sistema SHALL permitir guardar el paciente.
+8. THE Sistema SHALL persistir el Teléfono_Notificacion en la base de datos en el modelo `Paciente`.
+9. THE Sistema SHALL permitir editar o eliminar el número en cualquier momento desde el Modal_Edicion.
+
+---
+
+### Requisito 10: Notificación por SMS ante Cambio de Estado Quirúrgico
+
+**User Story:** Como Funcionario, quiero que el sistema envíe automáticamente una notificación por SMS al teléfono registrado del paciente cuando su estado quirúrgico cambie, para mantener informados a sus familiares sin intervención manual.
+
+#### Criterios de Aceptación
+
+1. WHEN el estado quirúrgico de un Paciente es actualizado, THE Sistema SHALL verificar si el campo `telefono` del Paciente tiene un valor.
+2. IF el campo `telefono` está vacío o es nulo, THEN THE Sistema SHALL no realizar ninguna acción de envío de SMS y SHALL continuar el flujo sin errores.
+3. IF el campo `telefono` tiene un valor válido, THEN THE Sistema SHALL enviar un SMS usando el servicio externo Twilio.
+4. THE contenido del mensaje SHALL incluir al menos: nombre del paciente y estado quirúrgico actualizado.
+5. THE número telefónico SHALL ser transformado a formato internacional (`+57`) antes del envío.
+6. THE Sistema SHALL NO bloquear la operación principal de actualización de estado en caso de fallo en el envío del SMS.
+7. IF ocurre un error durante el envío del SMS, THEN THE Sistema SHALL registrar el error en logs internos sin interrumpir la operación del usuario.
+8. THE Sistema SHALL NO requerir confirmación visual al usuario tras el envío (MVP).
+9. THE Sistema SHALL NO almacenar historial de mensajes enviados (MVP).

@@ -41,7 +41,7 @@ class AplicarEstadoVista (LoginRequeridoMixin, View):
 		try:
 			servicio = SesionServicio ()
 			sesion   = servicio.aplicarEstado (paciente, estado)
-			NotificacionServicio ().notificarCambioEstado (paciente.identificacion, estado)
+			NotificacionServicio ().notificarCambioEstado (paciente, estado)
 		except ValidationError as e:
 			return HttpResponse (str (e), status=400)
 		except Exception as e:
@@ -60,28 +60,32 @@ class ActualizarPacienteVista (LoginRequeridoMixin, View):
 	"""Actualiza la identificación de un paciente y retorna el fragmento de tablas."""
 
 	def post (self, request):
-		"""Recibe pacienteId, nuevaIdentificacion y labelOtro; persiste y retorna fragmento HTMX."""
-		pacienteId         = request.POST.get ('pacienteId')
+		"""Recibe pacienteId, nuevaIdentificacion y opcionalmente labelOtro/estadoOtro/telefono; persiste y retorna fragmento HTMX."""
+		import re
+		pacienteId          = request.POST.get ('pacienteId')
 		nuevaIdentificacion = request.POST.get ('nuevaIdentificacion', '').strip ()
-		labelOtro          = request.POST.get ('labelOtro', 'Otro').strip () or 'Otro'
-		estadoOtro         = request.POST.get ('estadoOtro', '').strip ()
+		labelOtro           = request.POST.get ('labelOtro', '').strip ()
+		estadoOtro          = request.POST.get ('estadoOtro', '').strip ()
+		telefono            = request.POST.get ('telefono', '').strip () or None
 
 		if not pacienteId or not nuevaIdentificacion:
 			return HttpResponse ('Datos incompletos.', status=400)
 
+		if telefono and not re.fullmatch (r'\d{10}', telefono):
+			return HttpResponse ('El teléfono debe tener exactamente 10 dígitos numéricos.', status=400)
+
 		paciente = get_object_or_404 (Paciente, pk=pacienteId)
 		paciente.identificacion = nuevaIdentificacion
+		paciente.telefono       = telefono
 		paciente.save ()
 
-		if estadoOtro:
+		# Solo modificar estado/label si el usuario lo cambió explícitamente
+		if estadoOtro and labelOtro:
 			try:
 				SesionServicio ().aplicarEstado (paciente, 'OTRO', labelOtro=labelOtro)
-				NotificacionServicio ().notificarCambioEstado (paciente.identificacion, 'OTRO')
+				NotificacionServicio ().notificarCambioEstado (paciente, 'OTRO')
 			except Exception as e:
 				logger.error (f"Error al aplicar estado OTRO desde modal: {e}")
-		else:
-			# Actualizar solo el labelOtro si ya existe sesión activa con estado OTRO
-			Sesion.objects.filter (paciente=paciente, oculto=False, estado=EstadoQuirurgico.OTRO).update (labelOtro=labelOtro)
 
 		contexto = _contextoGestion ()
 		return render (request, 'gestion/fragmento_tablas.html', contexto)
@@ -130,12 +134,46 @@ class TableroFragmentoVista (View):
 		return render (request, 'tablero/fragmento.html', contexto)
 
 
+class CargarProgramadosVista (LoginRequeridoMixin, View):
+	"""Limpia la tabla de pacientes y carga los programados desde la fuente externa."""
+
+	_ejecutando = False
+
+	def post (self, request):
+		"""Ejecuta Utils.cargarPacientesProgramadosCirugia() y retorna fragmento actualizado."""
+		if CargarProgramadosVista._ejecutando:
+			return HttpResponse ('Carga en progreso, espere.', status=409)
+
+		try:
+			CargarProgramadosVista._ejecutando = True
+			Utils.cargarPacientesProgramadosCirugia ()
+		except Exception as e:
+			logger.error (f"Error al cargar pacientes programados: {e}")
+			return HttpResponse ('Error al cargar pacientes programados.', status=500)
+		finally:
+			CargarProgramadosVista._ejecutando = False
+
+		return render (request, 'gestion/fragmento_tablas.html', _contextoGestion ())
+
+
 def _contextoGestion ():
 	"""Construye el contexto compartido para las vistas del panel de gestión."""
 	sesiones = list (obtenerSesionesVisibles ())
 	sesionPorPaciente = {s.paciente_id: s for s in sesiones}
+
+	# Pacientes con sesión activa, en el mismo orden que sesionesActivas
+	pacientesConSesion = [s.paciente for s in sesiones]
+	idsPacientesConSesion = {p.pk for p in pacientesConSesion}
+
+	# Pacientes sin sesión activa al final, ordenados por identificacion
+	pacientesSinSesion = list (
+		Paciente.objects.exclude (pk__in=idsPacientesConSesion).order_by ('identificacion')
+	)
+
+	pacientes = pacientesConSesion + pacientesSinSesion
+
 	return {
-		'pacientes':         Paciente.objects.all (),
+		'pacientes':         pacientes,
 		'sesionesActivas':   sesiones,
 		'estados':           EstadoQuirurgico,
 		'sesionPorPaciente': sesionPorPaciente,

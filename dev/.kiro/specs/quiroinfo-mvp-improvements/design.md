@@ -2,37 +2,44 @@
 
 ## Visión General
 
-Este documento describe el diseño técnico para las cuatro mejoras al MVP de Quiroinfo:
+Este documento describe el diseño técnico para las mejoras al MVP de Quiroinfo:
 
-1. Simplificación del Botón_OTRO (eliminación de `descripcionOtro`)
-2. Modal de edición de pacientes en el Panel_Gestion
-3. Actualización del Tablero: ordenamiento por `actualizadoEn` y layout de tabla
+1. Simplificación del Botón_OTRO (eliminación de `descripcionOtro`, persistencia de `labelOtro` en BD)
+2. Modal de edición de pacientes en el Panel_Gestion (identificación + estado OTRO)
+3. Tablero refactorizado como pantalla TV (flex layout, fuentes vh, hora 12h)
 4. Estilo visual oscuro en la Tabla_Pacientes_En_Sala
+5. Orden consistente entre tablas (derivado de `sesionesActivas`)
+6. Eliminación del modelo `RegistroEstado`
+7. Carga manual de pacientes programados (`CargarProgramadosVista`)
+8. CASCADE delete en `Sesion.paciente`
 
 La arquitectura permanece sin cambios: Django SSR + HTMX + Alpine.js + Tailwind CSS CDN.
-No se agregan nuevos endpoints ni modelos. Los cambios son quirúrgicos sobre el código existente.
 
 ---
 
 ## Arquitectura
 
-La arquitectura existente se mantiene intacta. El diagrama de flujo de datos es:
-
 ```mermaid
 flowchart TD
     subgraph Frontend
         A[Tabla_Programados\nAlpine.js x-data por fila] -->|hx-post| B[/gestion/sesiones/estado/]
-        C[Modal_Edicion\nAlpine.js] -->|hx-post programático| B
-        D[Tablero\nHTMX polling 15s] -->|hx-get| E[/tablero/fragmento/]
+        C[Modal_Edicion\nAlpine.js] -->|hx-post| D[/gestion/pacientes/actualizar/]
+        E[Botón Cargar\nAlpine.js confirm + spinner] -->|hx-post| F[/gestion/programados/cargar/]
+        G[Tablero\nHTMX polling 15s] -->|hx-get| H[/tablero/fragmento/]
     end
 
     subgraph Backend
-        B --> F[AplicarEstadoVista]
-        F --> G[SesionServicio.aplicarEstado]
-        G --> H[(BD: sesiones)]
-        E --> I[TableroFragmentoVista]
-        I --> J[obtenerSesionesVisibles\norder_by -actualizadoEn]
-        J --> H
+        B --> I[AplicarEstadoVista]
+        I --> J[SesionServicio.aplicarEstado]
+        J --> K[(BD: sesiones)]
+        D --> L[ActualizarPacienteVista]
+        L --> M[(BD: pacientes + sesiones)]
+        F --> N[CargarProgramadosVista]
+        N --> O[Utils.cargarPacientesProgramadosCirugia]
+        O --> K
+        H --> P[TableroFragmentoVista]
+        P --> Q[obtenerSesionesVisibles\norder_by -actualizadoEn]
+        Q --> K
     end
 ```
 
@@ -40,47 +47,50 @@ flowchart TD
 
 | Capa | Cambio |
 |---|---|
-| Modelo (`models.py`) | Eliminar campo `descripcionOtro` de `Sesion` |
-| Migración | Nueva migración para eliminar la columna |
-| Servicio (`servicios.py`) | Eliminar `descripcionOtro` de `aplicarEstado` y `_validarDescripcion`; cambiar orden en `obtenerSesionesVisibles` |
-| Vista (`vistas.py`) | Eliminar lectura de `descripcionOtro` del POST en `AplicarEstadoVista` |
-| Template `fragmento_tablas.html` | Simplificar Botón_OTRO, agregar botón Editar, agregar Modal_Edicion, aplicar estilo oscuro a Tabla_En_Sala |
-| Template `tablero/fragmento.html` | Reemplazar cards por tabla de filas, mostrar `actualizadoEn` |
+| Modelo (`models.py`) | Eliminar `descripcionOtro`; agregar `labelOtro`; cambiar FK a `CASCADE`; eliminar `RegistroEstado` |
+| Migraciones | 0002 elimina `descripcionOtro`; 0003 agrega `labelOtro`; 0005 elimina `RegistroEstado`; 0007 cambia FK a CASCADE |
+| Servicio (`servicios.py`) | `aplicarEstado` acepta `labelOtro`; `obtenerSesionesVisibles` ordena por `-actualizadoEn` e incluye `labelOtro` en `.only()`; sin `RegistroEstado` |
+| Vista (`vistas.py`) | Nuevas vistas `ActualizarPacienteVista` y `CargarProgramadosVista`; `_contextoGestion` deriva orden de `sesionesActivas` |
+| Template `fragmento_tablas.html` | Botón_OTRO simplificado; Modal_Edicion; estilo oscuro en Tabla_En_Sala; botón Cargar |
+| Template `tablero/fragmento.html` | Flex layout; fuentes `clamp(min, Xvh, max)`; hora en formato 12h |
+| Template `tablero/tablero.html` | `html/body` con `height: 100vh; overflow: hidden` |
+| `utils.py` | `cargarPacientesProgramadosCirugia` usa ORM (no SQL raw) |
 
 ---
 
 ## Componentes e Interfaces
 
-### 1. Modelo `Sesion` (simplificado)
-
-Se elimina el campo `descripcionOtro`. El modelo queda:
+### 1. Modelo `Sesion`
 
 ```python
 class Sesion (models.Model):
     id            = models.UUIDField (primary_key=True, default=uuid.uuid4, editable=False)
-    paciente      = models.ForeignKey (Paciente, on_delete=models.PROTECT)
+    paciente      = models.ForeignKey (Paciente, on_delete=models.CASCADE)
     estado        = models.CharField (max_length=20, choices=EstadoQuirurgico.choices)
+    labelOtro     = models.CharField (max_length=50, default='Otro')
     ingresadoEn   = models.DateTimeField (auto_now_add=True)
     actualizadoEn = models.DateTimeField (auto_now=True)
     oculto        = models.BooleanField (default=False)
 ```
 
-La migración correspondiente elimina la columna `descripcion_otro` de la tabla `sesiones`.
+Cambios respecto al modelo original:
+- `descripcionOtro` eliminado (migración 0002)
+- `labelOtro` agregado con `default='Otro'` (migración 0003)
+- `paciente` cambiado de `PROTECT` a `CASCADE` (migración 0007)
+- `RegistroEstado` eliminado completamente (migración 0005)
 
 ### 2. `SesionServicio.aplicarEstado`
 
-Firma simplificada — se elimina el parámetro `descripcionOtro` y el método `_validarDescripcion`:
-
 ```python
-def aplicarEstado (self, paciente: Paciente, nuevoEstado: str) -> Sesion:
+def aplicarEstado (self, paciente: Paciente, nuevoEstado: str, labelOtro: str = 'Otro') -> Sesion:
     """Crea la sesión si no existe, o actualiza el estado si ya existe."""
 ```
 
-El estado `OTRO` ya no requiere descripción. Se acepta directamente como cualquier otro estado.
+- Acepta `labelOtro` como parámetro opcional (default `'Otro'`).
+- Persiste `labelOtro` en BD cuando `nuevoEstado == 'OTRO'`.
+- No crea registros de auditoría (`RegistroEstado` eliminado).
 
 ### 3. `obtenerSesionesVisibles`
-
-Cambia el ordenamiento de `-ingresadoEn` a `-actualizadoEn`:
 
 ```python
 def obtenerSesionesVisibles ():
@@ -89,193 +99,143 @@ def obtenerSesionesVisibles ():
         Sesion.objects
         .filter (oculto=False)
         .select_related ('paciente')
-        .only ('id', 'paciente__identificacion', 'estado', 'ingresadoEn', 'actualizadoEn')
+        .only ('id', 'paciente__identificacion', 'estado', 'labelOtro', 'ingresadoEn', 'actualizadoEn')
         .order_by ('-actualizadoEn')
     )
 ```
 
-### 4. `AplicarEstadoVista`
-
-Se elimina la lectura de `descripcionOtro` del POST:
+### 4. `_contextoGestion`
 
 ```python
-def post (self, request):
-    pacienteId = request.POST.get ('pacienteId')
-    estado     = request.POST.get ('estado')
-    # descripcionOtro eliminado
+def _contextoGestion ():
+    sesiones = list (obtenerSesionesVisibles ())
+    sesionPorPaciente = {s.paciente_id: s for s in sesiones}
+    pacientesConSesion = [s.paciente for s in sesiones]
+    pacientesSinSesion = list (
+        Paciente.objects.exclude (pk__in={p.pk for p in pacientesConSesion}).order_by ('identificacion')
+    )
+    pacientes = pacientesConSesion + pacientesSinSesion
+    ...
 ```
 
-### 5. Botón_OTRO en `fragmento_tablas.html`
+Garantiza que Tabla_Programados y Tabla_En_Sala usen el mismo orden (`-actualizadoEn`).
 
-El Botón_OTRO pasa a comportarse igual que los demás botones: dispara el POST directamente con `hx-post`. El label es dinámico via Alpine.js (`labelOtro`), inicializado en `'Otro'`.
+### 5. `ActualizarPacienteVista` — nuevo
 
-El bloque `x-data` por fila se amplía para incluir el estado del modal y el label:
+`POST /gestion/pacientes/actualizar/`
 
-```js
-x-data="{
-    estadoActual: '...',
-    labelOtro: 'Otro',
-    modalAbierto: false,
-    editId: '',
-    editNombre: '...',
-    editEstado: '',
-    errorEdicion: ''
-}"
+Recibe: `pacienteId`, `nuevaIdentificacion`, `labelOtro` (opcional), `estadoOtro` (opcional).
+
+Lógica:
+1. Persiste `Paciente.identificacion`.
+2. Si `estadoOtro` y `labelOtro` presentes: llama `SesionServicio.aplicarEstado(paciente, 'OTRO', labelOtro=labelOtro)`.
+3. Retorna `fragmento_tablas.html` via HTMX.
+
+### 6. `CargarProgramadosVista` — nuevo
+
+`POST /gestion/programados/cargar/`
+
+- Protegida con `LoginRequeridoMixin`.
+- Lock de clase `_ejecutando` para prevenir concurrencia; retorna HTTP 409 si ya en progreso.
+- Llama `Utils.cargarPacientesProgramadosCirugia()`.
+- Retorna `fragmento_tablas.html` via HTMX.
+
+### 7. `Utils.cargarPacientesProgramadosCirugia`
+
+Usa Django ORM exclusivamente:
+
+```python
+Paciente.objects.all ().delete ()   # CASCADE elimina Sesiones asociadas
+for datos in pacientes_data:
+    Paciente.objects.create (**datos)
 ```
 
-### 6. Modal_Edicion
-
-Modal Alpine.js dentro de cada fila de la Tabla_Programados. No requiere nuevo endpoint.
+### 8. Modal_Edicion
 
 Flujo al guardar:
-1. Validar que `editId` y `editEstado` no estén vacíos → mostrar `errorEdicion` si fallan.
-2. Actualizar `labelOtro` con el valor de `editEstado`.
-3. Si el estado fue modificado respecto al estado actual: disparar POST a `aplicar-estado` con `estado=OTRO` usando `htmx.ajax`.
-4. Actualizar el texto de identificación en la fila de Tabla_Programados y en Tabla_En_Sala via Alpine.js (manipulación de estado reactivo).
-5. Cerrar el modal (`modalAbierto = false`).
+1. Validar que `editId.trim()` no esté vacío.
+2. Si `editEstado !== editEstadoOriginal`: incluir `labelOtro` y `estadoOtro` en el POST.
+3. POST a `ActualizarPacienteVista` via `htmx.ajax`.
+4. Cerrar modal.
 
-La actualización de identificación en Tabla_En_Sala se logra mediante un store Alpine.js compartido o mediante un atributo `x-text` reactivo que lee del estado de la fila correspondiente.
+`editEstadoOriginal` se inicializa al abrir el modal para detectar si el usuario realmente modificó el estado.
 
-### 7. Template `tablero/fragmento.html`
+### 9. Tablero — layout TV
 
-Reemplaza el grid de cards por una tabla HTML:
+`tablero.html`:
+- `html, body`: `height: 100vh; overflow: hidden; display: flex; flex-direction: column`
 
-```html
-<table class="w-full text-sm">
-    <thead>
-        <tr class="text-left text-gray-500 border-b border-gray-700">
-            <th>Identificación</th>
-            <th>Estado</th>
-            <th>Última actualización</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for sesion in sesiones %}
-        <tr>
-            <td>{{ sesion.paciente.identificacion }}</td>
-            <td><span class="badge ...">{{ sesion.get_estado_display }}</span></td>
-            <td>{{ sesion.actualizadoEn|date:"d/m/Y H:i" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-```
-
-### 8. Tabla_Pacientes_En_Sala en `fragmento_tablas.html`
-
-Aplica estilo oscuro (`bg-gray-900 text-white`) y muestra `actualizadoEn` en lugar de `ingresadoEn`. Los badges de estado usan los mismos colores que el Tablero.
+`fragmento.html`:
+- `.tablero-lista`: `display: flex; flex-direction: column; height: 100%`
+- Cada `.tablero-fila`: `flex: 1 1 0; min-height: 0` — divide la altura equitativamente
+- Fuentes con `clamp(min, Xvh, max)`:
+  - Identificación: `clamp(1rem, 4.5vh, 4rem)`
+  - Badge estado: `clamp(0.85rem, 3.5vh, 3rem)`
+  - Hora: `clamp(0.75rem, 2.5vh, 2rem)`
+- Hora: `{{ sesion.actualizadoEn|date:"g:i a" }}` → "08:50 am"
 
 ---
 
 ## Modelos de Datos
 
-### Sesion (después de la migración)
+### Sesion (estado final)
 
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | UUID PK | auto |
-| `paciente` | FK Paciente | PROTECT |
+| `paciente` | FK Paciente | CASCADE |
 | `estado` | CharField(20) | EstadoQuirurgico choices |
+| `labelOtro` | CharField(50) | default='Otro'; persiste el label del Botón_OTRO |
 | `ingresadoEn` | DateTimeField | auto_now_add |
 | `actualizadoEn` | DateTimeField | auto_now |
 | `oculto` | BooleanField | default=False |
 
-El campo `descripcionOtro` se elimina completamente.
+`RegistroEstado` eliminado. `labelOtro` es fuente de verdad en BD — los templates lo leen directamente:
 
-### Estado de UI (Label_OTRO)
-
-No persiste en base de datos. Es estado Alpine.js por fila:
-
+```html
+{% if sesion.estado == 'OTRO' %}{{ sesion.labelOtro }}{% else %}{{ sesion.get_estado_display }}{% endif %}
 ```
-labelOtro: string  // inicializado en 'Otro', actualizable desde Modal_Edicion
-```
+
+---
+
+## Endpoints
+
+| Método | URL | Vista | Auth |
+|---|---|---|---|
+| GET | `/tablero/` | `TableroVista` | No |
+| GET | `/tablero/fragmento/` | `TableroFragmentoVista` | No |
+| GET | `/gestion/` | `GestionVista` | Sí |
+| POST | `/gestion/sesiones/estado/` | `AplicarEstadoVista` | Sí |
+| POST | `/gestion/pacientes/agregar/` | `AgregarPacienteVista` | Sí |
+| POST | `/gestion/pacientes/actualizar/` | `ActualizarPacienteVista` | Sí |
+| POST | `/gestion/programados/cargar/` | `CargarProgramadosVista` | Sí |
 
 ---
 
 ## Propiedades de Corrección
 
-*Una propiedad es una característica o comportamiento que debe mantenerse verdadero en todas las ejecuciones válidas del sistema — esencialmente, un enunciado formal sobre lo que el sistema debe hacer. Las propiedades sirven como puente entre las especificaciones legibles por humanos y las garantías de corrección verificables por máquina.*
-
 ### Propiedad 1: Filtrado de sesiones visibles
 
-*Para cualquier* conjunto de sesiones en la base de datos con mezcla de `oculto=True` y `oculto=False`, `obtenerSesionesVisibles()` debe retornar exactamente y únicamente las sesiones con `oculto=False`.
+`obtenerSesionesVisibles()` debe retornar exactamente y únicamente las sesiones con `oculto=False`.
 
 **Valida: Requisito 3.1**
 
 ### Propiedad 2: Ordenamiento por actualizadoEn descendente
 
-*Para cualquier* conjunto de dos o más sesiones visibles (`oculto=False`), el resultado de `obtenerSesionesVisibles()` debe estar ordenado de forma que para todo par de sesiones consecutivas `s_i` y `s_{i+1}` en el resultado, se cumpla `s_i.actualizadoEn >= s_{i+1}.actualizadoEn`.
+Para todo par consecutivo `s_i`, `s_{i+1}` en el resultado, se cumple `s_i.actualizadoEn >= s_{i+1}.actualizadoEn`.
 
-**Valida: Requisitos 3.2, 4.1**
+**Valida: Requisitos 3.2, 4.1, 5.1**
 
 ---
 
 ## Manejo de Errores
 
-### Eliminación de `descripcionOtro`
-
-- La migración elimina la columna. Si hay datos existentes en `descripcionOtro`, se pierden (comportamiento esperado según los requisitos).
-- El servicio ya no lanza `ValidationError` para el estado `OTRO` por falta de descripción.
-
-### Modal_Edicion — validación frontend
-
-- Si `editId` o `editEstado` están vacíos al guardar: Alpine.js asigna un mensaje a `errorEdicion` y no cierra el modal.
-- Si el POST a `aplicar-estado` falla (HTTP 4xx/5xx): HTMX no reemplaza el fragmento. El error queda silencioso en esta iteración (comportamiento heredado del flujo existente).
-
-### Polling del Tablero
-
-- Si el endpoint `/tablero/fragmento/` no responde: HTMX activa el evento `htmx:send-error`, que el template del tablero ya maneja mostrando el banner "Sin conexión" via Alpine.js.
+- Modal: `editId` vacío → `errorEdicion` sin cerrar modal.
+- `CargarProgramadosVista`: `_ejecutando == True` → HTTP 409.
+- Tablero polling: `htmx:send-error` → banner "Sin conexión" via Alpine.js.
 
 ---
 
 ## Estrategia de Testing
 
-### Enfoque dual
-
-Se usan tests unitarios para ejemplos concretos y tests basados en propiedades para las propiedades universales identificadas.
-
-**PBT aplica** a la capa de servicio (`obtenerSesionesVisibles`) porque es una función pura con comportamiento que varía significativamente con el input (distintas combinaciones de sesiones ocultas/visibles y distintos valores de `actualizadoEn`). No aplica a los cambios de UI/templates.
-
-### Librería PBT
-
-Se usa **Hypothesis** (ya disponible en el ecosistema Python/pytest del proyecto).
-
-Configuración mínima: 100 iteraciones por propiedad (`@settings(max_examples=100)`).
-
-### Tests unitarios (ejemplos concretos)
-
-Cubren los cambios de comportamiento en el servicio:
-
-- `aplicarEstado(paciente, 'OTRO')` sin `descripcionOtro` no lanza error (Requisito 1.6)
-- `aplicarEstado` ya no acepta ni persiste `descripcionOtro` (Requisito 1.1)
-- `AplicarEstadoVista` POST con `estado=OTRO` y sin `descripcionOtro` retorna 200 (Requisito 1.2)
-- Los tests existentes que dependían de `descripcionOtro` se actualizan o eliminan
-
-### Tests de propiedades (Hypothesis)
-
-**Propiedad 1 — Filtrado de sesiones visibles**
-
-```python
-# Feature: quiroinfo-mvp-improvements, Propiedad 1: filtrado oculto=False
-@given(st.lists(st.booleans(), min_size=1))
-@settings(max_examples=100)
-def test_solo_retorna_sesiones_visibles (lista_oculto):
-    # Crear sesiones con distintas combinaciones de oculto
-    # Verificar que el resultado contiene exactamente las de oculto=False
-```
-
-**Propiedad 2 — Ordenamiento por actualizadoEn descendente**
-
-```python
-# Feature: quiroinfo-mvp-improvements, Propiedad 2: orden por actualizadoEn desc
-@given(st.lists(st.datetimes(), min_size=2))
-@settings(max_examples=100)
-def test_sesiones_ordenadas_por_actualizado_en_desc (fechas):
-    # Crear sesiones con distintos actualizadoEn
-    # Verificar que el resultado está ordenado descendentemente
-```
-
-### Tests de integración
-
-- Verificar que la migración se aplica sin errores y que la columna `descripcion_otro` ya no existe en la tabla `sesiones`.
-- Verificar que el endpoint `/tablero/fragmento/` retorna HTTP 200 con el nuevo layout de tabla.
+Tests unitarios + Hypothesis (PBT) para las dos propiedades de corrección. Ver `app_core/test_servicios.py` y `app_core/test_vistas.py`.

@@ -1,6 +1,6 @@
 import logging
 
-from .models import EstadoQuirurgico, Paciente, RegistroEstado, Sesion
+from .models import EstadoQuirurgico, Paciente, Sesion
 
 logger = logging.getLogger (__name__)
 
@@ -24,7 +24,6 @@ class SesionServicio:
 			oculto=False,
 			defaults={'estado': nuevoEstado, 'labelOtro': labelOtro},
 		)
-		estadoAnterior = None if creada else sesion.estado
 
 		if not creada:
 			sesion.estado = nuevoEstado
@@ -35,12 +34,6 @@ class SesionServicio:
 			sesion.oculto = True
 
 		sesion.save ()
-
-		RegistroEstado.objects.create (
-			sesion=sesion,
-			estadoAnterior=estadoAnterior,
-			estadoNuevo=nuevoEstado,
-		)
 
 		logger.info (f"Estado aplicado: {paciente.identificacion} → {nuevoEstado}")
 		return sesion

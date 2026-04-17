@@ -5,7 +5,7 @@
 	<div class="tablero-encabezados">
 		<span>Identificación</span>
 		<span>Estado</span>
-		<span>Última actualización</span>
+		<span>Hora</span>
 	</div>
 
 	{% comment %}One flex row per patient — each gets flex:1 so all N rows share the height equally{% endcomment %}
@@ -23,7 +23,7 @@
 				{% if sesion.estado == 'OTRO' %}{{ sesion.labelOtro }}{% else %}{{ sesion.get_estado_display }}{% endif %}
 			</span>
 		</span>
-		<span class="col-hora">{{ sesion.actualizadoEn|date:"d/m/Y H:i" }}</span>
+		<span class="col-hora">{{ sesion.actualizadoEn|date:"g:i a" }}</span>
 	</div>
 	{% endfor %}
 

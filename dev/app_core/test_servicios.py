@@ -4,7 +4,7 @@ from datetime import timezone
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from .models import EstadoQuirurgico, Paciente, Sesion, RegistroEstado
+from .models import EstadoQuirurgico, Paciente, Sesion
 from .servicios import SesionServicio, obtenerSesionesVisibles
 
 
@@ -84,15 +84,6 @@ class TestAplicarEstado:
 		sesion = self.servicio.aplicarEstado (paciente, EstadoQuirurgico.OTRO)
 
 		assert sesion.estado == EstadoQuirurgico.OTRO
-
-	def test_crea_registro_estado_al_aplicar (self):
-		"""aplicarEstado() crea un RegistroEstado por cada llamada."""
-		paciente = PacienteFactory ()
-
-		self.servicio.aplicarEstado (paciente, EstadoQuirurgico.EN_PREPARACION)
-		self.servicio.aplicarEstado (paciente, EstadoQuirurgico.EN_CIRUGIA)
-
-		assert RegistroEstado.objects.filter (sesion__paciente=paciente).count () == 2
 
 
 # ---------------------------------------------------------------------------

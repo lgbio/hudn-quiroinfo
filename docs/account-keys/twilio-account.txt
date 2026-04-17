@@ -1,0 +1,8 @@
+Twilio free account:
+
+Account SID:
+AC55a4720ef83d20eb07883a817afe41f8
+
+Auth Token:
+ce03790fd29bb4a05bc12c6d1e292b56
+

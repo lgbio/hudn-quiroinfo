@@ -17,6 +17,7 @@ class Paciente (models.Model):
 
 	identificacion = models.CharField (max_length=50, unique=True)
 	nombre         = models.CharField (max_length=255, null=True, blank=True)
+	telefono       = models.CharField (max_length=10, null=True, blank=True)
 	origen         = models.CharField (
 		max_length=20,
 		choices=[('PROGRAMADO', 'Programado'), ('URGENCIAS', 'Urgencias')]
@@ -34,7 +35,7 @@ class Sesion (models.Model):
 	"""Registro activo de un paciente en el tablero durante su proceso quirúrgico."""
 
 	id              = models.UUIDField (primary_key=True, default=uuid.uuid4, editable=False)
-	paciente        = models.ForeignKey (Paciente, on_delete=models.PROTECT)
+	paciente        = models.ForeignKey (Paciente, on_delete=models.CASCADE)
 	estado          = models.CharField (max_length=20, choices=EstadoQuirurgico.choices)
 	labelOtro       = models.CharField (max_length=50, default='Otro')
 	ingresadoEn     = models.DateTimeField (auto_now_add=True)
@@ -58,16 +59,3 @@ class Sesion (models.Model):
 	def __str__ (self):
 		"""Retorna identificación y estado como representación textual."""
 		return f"{self.paciente.identificacion} — {self.estado}"
-
-
-class RegistroEstado (models.Model):
-	"""Auditoría de cada cambio de estado de una sesión quirúrgica."""
-
-	id             = models.UUIDField (primary_key=True, default=uuid.uuid4, editable=False)
-	sesion         = models.ForeignKey (Sesion, on_delete=models.PROTECT)
-	estadoAnterior = models.CharField (max_length=20, null=True, blank=True)
-	estadoNuevo    = models.CharField (max_length=20)
-	cambiadoEn     = models.DateTimeField (auto_now_add=True)
-
-	class Meta:
-		db_table = 'registro_estados'

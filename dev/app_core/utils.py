@@ -4,6 +4,43 @@ import traceback    # format_exc
 
 class Utils:
 
+
+	#------------------------------------------------------------------------------
+	#------------------------------------------------------------------------------
+	def cargarPacientesProgramadosCirugia ():
+		"""Limpia pacientes y sesiones existentes, y carga los pacientes programados para cirugía."""
+		from app_core.models import Paciente, Sesion
+
+		pacientes_data = [
+			{'id': 11, 'identificacion': 'Jorge Ra.',  'nombre': 'Jorge Rámirez',    'origen': 'PROGRAMADO'},
+			{'id': 12, 'identificacion': 'Maria Be.',  'nombre': 'María Belen',      'origen': 'PROGRAMADO'},
+			{'id': 13, 'identificacion': 'Lina M.',    'nombre': 'Lina Montoya',     'origen': 'PROGRAMADO'},
+			{'id': 14, 'identificacion': 'Alberto C.', 'nombre': 'Alberto Camargo',  'origen': 'PROGRAMADO'},
+			{'id': 15, 'identificacion': 'Diana U.',   'nombre': 'Diana Uribe',      'origen': 'PROGRAMADO'},
+			{'id': 16, 'identificacion': 'Adrian C.',  'nombre': 'Adrian Cifuentes', 'origen': 'PROGRAMADO'},
+		]
+
+		# CASCADE via ORM: deleting Paciente also deletes its Sesiones
+		Paciente.objects.all ().delete ()
+
+		print (f"\n+++ Creando pacientes PROGRAMADOS...")
+		for datos in pacientes_data:
+			Paciente.objects.create (**datos)
+
+		print (f"+++ {len (pacientes_data)} pacientes cargados.")
+
+	#----------------------------------------------------------
+	#-- Print exception with added 'message' and 'text'
+	#----------------------------------------------------------
+	def printException (message, docFilepath=None):
+		try:
+			stackTrace = ''.join(traceback.format_exc())
+			orgMessage = f"{message}:\n{stackTrace}"
+			open ("log-exceptions.log", "a").write (orgMessage)
+			print (orgMessage)
+		except Exception as ex:
+			print (f"+++ Error en printException. Message: {message}")
+			pass
 	#----------------------------------------------------------
 	#-- Parse a database URL (e.g. Railway PostgreSQL URL) into components.
 	#----------------------------------------------------------
@@ -24,43 +61,3 @@ class Utils:
 		conn.commit()
 		conn.close()
 	
-	#------------------------------------------------------------------------------
-	#------------------------------------------------------------------------------
-	def cargarPacientesProgramadosCirugia ():
-		""" Carga los pacientes programados para cirugia desde la BD del hospital"""
-
-		table = "pacientes"
-		pacientes_data = [
-			(11, 'Jorge R.', "Jorge Rámirez", "PROGRAMADO"),
-			(12, 'Maria B.', "María Belen", "PROGRAMADO"),
-			(13, 'Lina M.', "Lina Montoya", "PROGRAMADO"),
-			(14, 'Alberto C.', "Alberto Camargo", "PROGRAMADO"),
-			(15, 'Diana U.', "Diana Uribe", "PROGRAMADO"),
-			(16, 'Adrian C.', "Adrian Cifuentes", "PROGRAMADO") ]
-
-		#------------------------------------------------------------------------
-		# Firt: Remove old ones
-		Utils.execute_sql_query ("DELETE FROM pacientes;")
-
-		print (f"\n+++ Creando pacientes PROGRAMADOS...")
-		try:
-			for entry in pacientes_data:
-				placeholders = ', '.join(['%s'] * len(entry))
-				query = psycopg2.sql.SQL("INSERT INTO {} VALUES ({})").format(
-					psycopg2.sql.Identifier(table),
-					psycopg2.sql.SQL(placeholders)
-				)				 
-				Utils.execute_sql_query (query, entry)
-		except Exception as ex:
-			Utils.printException (f">>> Exception::{str(ex)}")
-
-	#-- Print exception with added 'message' and 'text'
-	def printException (message, docFilepath=None):
-		try:
-			stackTrace = ''.join(traceback.format_exc())
-			orgMessage = f"{message}:\n{stackTrace}"
-			open ("log-exceptions.log", "a").write (orgMessage)
-			print (orgMessage)
-		except Exception as ex:
-			print (f"+++ Error en printException. Message: {message}")
-			pass
