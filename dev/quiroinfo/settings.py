@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path (__file__).resolve ().parent.parent
@@ -17,9 +18,9 @@ EMAIL_DOMINIO_PERMITIDO = 'hodenar.gov.co'
 #--------------------------------------------------------------------
 # Twilio — Notificaciones SMS (Requisito 10)
 #--------------------------------------------------------------------
-TWILIO_ACCOUNT_SID = 'AC55a4720ef83d20eb07883a817afe41f8'
-TWILIO_AUTH_TOKEN  = 'ce03790fd29bb4a05bc12c6d1e292b56'
-TWILIO_FROM_NUMBER = '+12183794062'
+TWILIO_ACCOUNT_SID = os.getenv ('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN  = os.getenv ('TWILIO_AUTH_TOKEN')
+TWILIO_FROM_NUMBER = os.getenv ('TWILIO_FROM_NUMBER')
 #--------------------------------------------------------------------
 
 ALLOWED_HOSTS = ['*']
