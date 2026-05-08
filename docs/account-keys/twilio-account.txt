@@ -1,8 +1,19 @@
 Twilio free account:
 
 Account SID:
+ACb8b354d4f5b40698eeb6df0b9726f94c
+
+Auth Token:
+3fdfa0e15c3392a522ac48245b81bacf
+
+---------------------
+
+Account SID:
 AC55a4720ef83d20eb07883a817afe41f8
 
 Auth Token:
 ce03790fd29bb4a05bc12c6d1e292b56
+
+Recovery code: 28-Abril-2026
+9Q7GKQJ41X62H448774FPT6M
 
